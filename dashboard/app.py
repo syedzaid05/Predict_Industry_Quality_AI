@@ -50,25 +50,24 @@ PAGES = {
 if "page" not in st.session_state:
     st.session_state["page"] = PAGES["Predict"]
 
-nav_cols = st.columns(len(PAGES), gap="small")
-for (label, target), col in zip(PAGES.items(), nav_cols):
-    is_active = st.session_state["page"] == target
-    if col.button(
-        label,
-        key=f"nav_{label}",
-        use_container_width=True,
-        type="primary" if is_active else "secondary",
-    ):
-        st.session_state["page"] = target
-        st.rerun()
-
-page = st.session_state["page"]
+page = st.segmented_control(
+    "Navigate",
+    options=list(PAGES.values()),
+    default=st.session_state["page"],
+    key="st_page",
+    label_visibility="collapsed",
+)
+if page and page != st.session_state["page"]:
+    st.session_state["page"] = page
+    st.rerun()
+elif not page:
+    page = st.session_state["page"]
 
 with st.sidebar:
     st.title("⚙ Predict IQ-AI")
     st.caption("Random Forest / XGBoost · Isolation Forest · SHAP")
     st.divider()
-    st.caption("Use the pill buttons at the top to switch pages — they work best on phones.")
+    st.caption("Use the selector at the top to switch pages — it works best on phones.")
     if "rt_log" in st.session_state:
         st.metric("Manual readings logged", len(st.session_state["rt_log"]))
 
