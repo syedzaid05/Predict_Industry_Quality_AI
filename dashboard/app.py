@@ -6,9 +6,11 @@ Explainability | Monitoring (data drift / prediction stats).
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
-if __package__ in (None, ""):
-    sys.path.insert(0, "src")
+_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 import io
 
