@@ -53,6 +53,7 @@ NUM_COLS = [
 
 page = st.sidebar.radio("Navigation", [
     "🏠 Single Prediction",
+    "⏱ Real-Time Monitoring (Manual)",
     "📄 Batch CSV Prediction",
     "📊 Machine Health Analytics",
     "🔍 Explainability",
@@ -108,6 +109,84 @@ if page == "🏠 Single Prediction":
                     st.markdown(f"`{name}` : {'+' if val >= 0 else ''}{val}")
         except Exception as e:
             st.error(f"Invalid input: {e}")
+
+elif page == "⏱ Real-Time Monitoring (Manual)":
+    st.title("⏱ Real-Time Monitoring — Manual Entry")
+    st.markdown("Type each sensor reading as it comes in. Every entry is validated, predicted, and appended to a live log with drift checks — no CSV required.")
+
+    if "rt_log" not in st.session_state:
+        st.session_state["rt_log"] = pd.DataFrame(
+            columns=["time", "decision", "failure_probability", "anomaly_score",
+                     "Air temperature [K]", "Process temperature [K]",
+                     "Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]", "Type",
+                     "drift_sigma"]
+        )
+
+    with st.form("rt_form", border=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            at = st.number_input("Air temperature [K]", 250.0, 400.0, 298.1, key="rt_at")
+            pt = st.number_input("Process temperature [K]", 250.0, 420.0, 308.6, key="rt_pt")
+        with c2:
+            rs = st.number_input("Rotational speed [rpm]", 500.0, 3500.0, 1551.0, step=1.0, key="rt_rs")
+            tq = st.number_input("Torque [Nm]", 0.0, 120.0, 42.8, key="rt_tq")
+        with c3:
+            tw = st.number_input("Tool wear [min]", 0, 350, 0, step=1, key="rt_tw")
+            tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"], key="rt_tp")
+        add_threshold = st.slider("Failure-risk threshold", 0.5, 0.95, 0.7, 0.05, key="rt_thr")
+        submitted = st.form_submit_button("➕ Add reading (real-time check)", type="primary")
+
+    if submitted:
+        try:
+            rec = validate_single_record({
+                "Air temperature [K]": at, "Process temperature [K]": pt,
+                "Rotational speed [rpm]": rs, "Torque [Nm]": tq,
+                "Tool wear [min]": tw, "Type": tp.split(" ")[0],
+            })
+            df, _ = validate_dataframe(pd.DataFrame([rec]), "manual reading")
+            pred = get_predictor()
+            pred.risk_threshold = add_threshold
+            d = pred.predict(df, explain=True)[0]
+
+            ref = get_reference_stats()
+            refstd = ref["std"]["Torque [Nm]"] if ref else 1.0
+            drift = abs(tq - (ref["mean"]["Torque [Nm]"] if ref else tq)) / max(refstd, 1e-9)
+
+            st.session_state["rt_log"].loc[len(st.session_state["rt_log"])] = {
+                "time": pd.Timestamp.now().strftime("%H:%M:%S"),
+                "decision": d["decision"],
+                "failure_probability": d["failure_probability"],
+                "anomaly_score": d["anomaly_score"],
+                "Air temperature [K]": at, "Process temperature [K]": pt,
+                "Rotational speed [rpm]": rs, "Torque [Nm]": tq,
+                "Tool wear [min]": tw, "Type": tp.split(" ")[0],
+                "drift_sigma": round(drift, 2),
+            }
+            color = {"HEALTHY": "green", "WARNING": "orange", "INSPECT": "orange", "FAILURE_RISK": "red"}[d["decision"]]
+            st.markdown(f"### Latest reading: :{color}[{d['decision']}] — {d['maintenance_priority']}")
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Failure probability", f"{d['failure_probability']:.3f}")
+            m2.metric("Anomaly score", f"{d['anomaly_score']:.3f}")
+            m3.metric("Agreement", d["agreement"].split(":")[0])
+            m4.metric("Torque drift", f"{drift:.2f}σ")
+            if d["shap"]:
+                st.markdown("**Why:** " + " · ".join(f"`{n}` {v:+.3f}" for n, v in d["shap"][:3]))
+        except Exception as e:
+            st.error(f"Rejected: {e}")
+
+    log = st.session_state["rt_log"]
+    if len(log):
+        st.divider()
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Readings", len(log))
+        c2.metric("High risk", int((log["decision"] == "FAILURE_RISK").sum()))
+        c3.metric("Last state", log.iloc[-1]["decision"])
+        st.plotly_chart(px.line(log, x="time", y="failure_probability", markers=True,
+                                title="Failure probability over readings"), use_container_width=True)
+        st.plotly_chart(px.line(log, x="time", y="Torque [Nm]", markers=True,
+                                title="Torque over readings (drift watch)"), use_container_width=True)
+        with st.expander("Full manual-entry log"):
+            st.dataframe(log.sort_values("time", ascending=False), use_container_width=True)
 
 elif page == "📄 Batch CSV Prediction":
     st.title("📄 Batch CSV Prediction")
