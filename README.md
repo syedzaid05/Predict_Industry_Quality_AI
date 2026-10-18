@@ -39,7 +39,11 @@ src/predict_industrial_quality_ai/
   train.py           Layer 4 - RF/XGB training, IsolationForest, MLflow logging, model versioning
   decision.py        Layer 5 - risk thresholds, grey band, disagreement logic, priorities, SHAP
   logging_config.py  Layer 7 - rotating file+stdout logging
-dashboard/app.py     Layer 6 - 5-page Streamlit app
+dashboard/
+  app.py                 Layer 6 - entry point (st.navigation multipage)
+  ui_common.py           shared components (models cache, sensor grid, decision card)
+  pages/                 one module per page: single_prediction, live_monitoring,
+                         batch_csv, health_analytics, explainability, system_monitoring
 tests/               pytest: validation, pipeline, decision-layer, SHAP
 scripts/generate_data.py  synthetic AI4I-format generator
 models/latest/       versioned artifacts (classifier, anomaly detector, registry, reference stats)
@@ -47,11 +51,12 @@ mlflow.db + mlruns/  MLflow tracking (sqlite backend)
 ```
 
 ## Dashboard pages
-- **Single Prediction** — manual sensor input, risk-threshold slider, SHAP drivers, priority
+- **Single Prediction** — manual sensor input (SI units + allowed ranges), risk-threshold slider, SHAP drivers, priority
+- **Real-Time Manual Monitoring** — type readings one by one; live log, trends, drift checks
 - **Batch CSV Prediction** — upload AI4I-format CSV, download annotated results
 - **Machine Health Analytics** — decision share, risk by type, probability & feature histograms
-- **Explainability** — model feature importance + how to read SHAP values
-- **Monitoring** — input drift vs training reference stats, classifier ↔ detector disagreement rate
+- **Explainability (SHAP)** — global feature importance + how to read SHAP values
+- **System Monitoring** — input drift vs training reference stats, classifier ↔ detector disagreement rate
 
 ## MLflow UI
 ```powershell
