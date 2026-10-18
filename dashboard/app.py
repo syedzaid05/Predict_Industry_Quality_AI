@@ -1,6 +1,6 @@
 ﻿"""Layer 6 - Streamlit dashboard entrypoint.
 
-Premium-themed, mobile-friendly UI.
+Native dark theme, minimal custom CSS (robust on desktop + mobile).
 Pages: Single Prediction | Real-Time Manual Monitoring | Batch CSV |
 Machine Health Analytics | Explainability | Monitoring.
 """
@@ -26,56 +26,18 @@ from predict_industrial_quality_ai.validation import (
 
 st.set_page_config(page_title="Predict Industrial Quality AI", page_icon="⚙", layout="wide")
 
-# ---------------------------------------------------------------- premium theme
-st.markdown(
-    """<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">""",
-    unsafe_allow_html=True,
-)
+# Minimal, safe styling only (no widget-internal overrides).
 st.markdown(
     """
     <style>
-      :root{--gold:#e8b64c;}
-      html, body, [data-testid="stAppViewContainer"]{font-family:'Manrope',sans-serif !important;}
-      header[data-testid="stHeader"]{background:transparent;}
-      [data-testid="stAppViewContainer"]::before{
-        content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-        background:
-          radial-gradient(800px 420px at 85% -10%, rgba(232,182,76,.10), transparent 60%),
-          radial-gradient(700px 380px at -10% 30%, rgba(77,124,254,.09), transparent 60%),
-          linear-gradient(165deg,#0b0d12 0%,#10151e 55%,#141a26 100%);
-      }
-      [data-testid="stAppViewContainer"] > .main{background:transparent;}
-      section[data-testid="stSidebar"]{background:rgba(16,20,28,.92);border-right:1px solid rgba(232,182,76,.18);}
-      section[data-testid="stSidebar"] *{color:#dfe5ef !important;}
-      .block-container{padding-top:1.1rem;max-width:1180px;}
-      h1,h2,h3{color:#f6f8fc !important;letter-spacing:-.02em;}
-      h1{font-weight:800 !important;}
-      div[data-testid="stForm"],div[data-testid="stExpander"],div[data-testid="stDataFrame"],div[data-testid="stPlotlyChart"],div[data-testid="stMetric"]{
-        background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015)) !important;
-        border:1px solid rgba(255,255,255,.09) !important;border-radius:16px !important;
-      }
-      div[data-testid="stForm"]{box-shadow:0 10px 30px rgba(0,0,0,.35);}
-      label,.stMarkdown p{color:#c9d1e0;}
-      button[kind="primary"]{
-        background:linear-gradient(135deg,#e8b64c 0%,#c9912f 100%) !important;
-        color:#16130a !important;font-weight:800;border:none;border-radius:12px;
-        box-shadow:0 6px 18px rgba(232,182,76,.28);transition:.15s;
-      }
-      button[kind="primary"]:hover{filter:brightness(1.07);transform:translateY(-1px);}
-      button[kind="secondary"]{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;
-        color:#dfe5ef !important;border-radius:12px;}
-      div[data-testid="stMetric"]{border-radius:14px;padding:.7rem .9rem .5rem;}
-      div[data-testid="stMetricValue"]{color:#fff;font-weight:800;}
-      div[data-testid="stMetricLabel"] p{color:#8f9bad;font-size:.8rem;}
-      div[data-testid="stAlert"],div[data-testid="stButton"] button{border-radius:12px;}
-      div[data-testid="stCaptionContainer"]{color:#8f9bad !important;}
-      @media (max-width:640px){.block-container{padding-left:.8rem;padding-right:.8rem;}h1{font-size:1.4rem !important;}}
+      .block-container {padding-top: 1rem; max-width: 1180px;}
+      div[data-testid="stMetric"] {background: #ffffff0d; border: 1px solid #ffffff18; border-radius: 12px; padding: 0.6rem 0.9rem;}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ------------------------------------------------------------ nav + hero helpers
+# ------------------------------------------------------------------ navigation
 PAGES = {
     "Predict": "🏠 Single Prediction",
     "Live": "⏱ Real-Time Monitoring (Manual)",
@@ -99,42 +61,14 @@ for (label, target), col in zip(PAGES.items(), nav_cols):
     ):
         st.session_state["page"] = target
         st.rerun()
-st.divider()
 
 page = st.session_state["page"]
 
-
-def hero(title: str, subtitle: str):
-    st.markdown(
-        f"""
-        <div style="margin-bottom:-4px;">
-          <div style="display:flex;align-items:center;gap:.55rem;">
-            <div style="height:26px;width:4px;border-radius:2px;background:linear-gradient(180deg,#e8b64c,#c9912f);"></div>
-            <h1 style="margin:0;font-weight:800;">{title}</h1>
-          </div>
-          <div style="color:#93a0b4;margin:.25rem 0 .2rem .9rem;font-size:.95rem;">{subtitle}</div>
-          <div style="height:2px;width:72px;border-radius:2px;margin:.35rem 0 .6rem .9rem;
-                      background:linear-gradient(90deg,#e8b64c,transparent);"></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-SI_UNITS = {
-    "Air temperature [K]": "K (kelvin)",
-    "Process temperature [K]": "K (kelvin)",
-    "Rotational speed [rpm]": "rpm (rev/min)",
-    "Torque [Nm]": "Nm (newton·metre)",
-    "Tool wear [min]": "min (minutes)",
-}
-NUM_COLS = list(SI_UNITS)
-
 with st.sidebar:
-    st.markdown("### ⚙ Predict Industrial Quality AI")
+    st.title("⚙ Predict IQ-AI")
     st.caption("Random Forest / XGBoost · Isolation Forest · SHAP")
-    st.markdown("---")
-    st.markdown("""<span style="font-size:.9rem;">On a phone, use the pill buttons at the top of the page to move between sections.</span>""", unsafe_allow_html=True)
+    st.divider()
+    st.caption("Use the pill buttons at the top to switch pages — they work best on phones.")
     if "rt_log" in st.session_state:
         st.metric("Manual readings logged", len(st.session_state["rt_log"]))
 
@@ -155,9 +89,19 @@ def get_reference_stats():
         return None
 
 
+SI_UNITS = {
+    "Air temperature [K]": "K",
+    "Process temperature [K]": "K",
+    "Rotational speed [rpm]": "rpm",
+    "Torque [Nm]": "Nm",
+    "Tool wear [min]": "min",
+}
+NUM_COLS = list(SI_UNITS)
+
+
 def sensor_columns(prefix=""):
-    """Two-column sensor input grid showing unit + range on every field."""
-    c1, c2 = st.columns(2)
+    """Two-column sensor grid; every field shows its SI unit + allowed range."""
+    cols = st.columns(2)
     order = ["Air temperature [K]", "Process temperature [K]", "Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]"]
     defaults = {"Air temperature [K]": 298.1, "Process temperature [K]": 308.6,
                 "Rotational speed [rpm]": 1551.0, "Torque [Nm]": 42.8, "Tool wear [min]": 0.0}
@@ -169,15 +113,25 @@ def sensor_columns(prefix=""):
             last = st.session_state["rt_log"].iloc[-1]
             if col_name in last:
                 default = float(last[col_name])
-        container = c1 if i % 2 == 0 else c2
-        with container:
-            st.caption(
-                f"Range {lo:g} – {hi:g} · SI: {SI_UNITS[col_name]}"
-            )
+        with cols[i % 2]:
             outs[col_name] = st.number_input(
-                col_name, min_value=lo, max_value=hi, value=default, key=f"{prefix}{col_name}"
+                f"{col_name} ({SI_UNITS[col_name]})  ·  {lo:g}–{hi:g}",
+                min_value=lo, max_value=hi, value=default, key=f"{prefix}{col_name}",
             )
     return outs
+
+
+def show_decision(d: dict):
+    st.success(f"Decision: {d['decision']}  ·  {d['maintenance_priority']}")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Failure probability", f"{d['failure_probability']:.3f}")
+    m2.metric("Anomaly score", f"{d['anomaly_score']:.3f}")
+    m3.metric("Model agreement", d["agreement"].split(":")[0])
+    m4.metric("Anomaly detected?", "Yes" if d["anomaly_flag"] else "No")
+    if d["shap"]:
+        with st.expander("Why? — top SHAP drivers (positive = pushes towards failure)", expanded=True):
+            for name, val in d["shap"]:
+                st.markdown(f"- `{name}` — **{val:+.4f}**")
 
 
 def results_table(decisions):
@@ -190,17 +144,14 @@ def results_table(decisions):
 
 # ============================================================ SINGLE PREDICTION
 if page == "🏠 Single Prediction":
-    hero("Single Machine Prediction", "Sensor readings — validated, scored by the ML engine and explained with SHAP.")
+    st.title("Single Machine Prediction")
+    st.caption("Enter sensor readings — validated, scored by the ML engine and explained with SHAP.")
     names = sensor_columns()
-    col3 = st.columns(2)[1]
-    with col3:
-        tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"])
-    cta1, cta2 = st.columns([1, 2])
-    with cta1:
-        explain = st.checkbox("SHAP explanation", True)
-        risk = st.slider("Risk threshold", 0.5, 0.95, 0.7, 0.05)
+    tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"])
+    explain = st.checkbox("Include SHAP explanation", True)
+    risk = st.slider("Risk threshold (FAILURE_RISK)", 0.5, 0.95, 0.7, 0.05)
 
-    if st.button("RUN PREDICTION", type="primary", use_container_width=True):
+    if st.button("Run prediction", type="primary", use_container_width=True):
         try:
             rec = validate_single_record({**names, "Type": tp.split(" ")[0]})
             df, issues = validate_dataframe(pd.DataFrame([rec]), "single input")
@@ -208,49 +159,15 @@ if page == "🏠 Single Prediction":
                 st.warning(i)
             pred = get_predictor()
             pred.risk_threshold = risk
-            d = pred.predict(df, explain=explain)[0]
-            color = {"HEALTHY": "#3ddc84", "WARNING": "#f5a623", "INSPECT": "#f5a623", "FAILURE_RISK": "#ff5252"}[d["decision"]]
-            st.markdown(
-                f"""
-                <div style="padding:1rem 1.2rem;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid {color}55;">
-                  <div style="display:flex;align-items:center;gap:.7rem;">
-                    <div style="height:38px;width:8px;border-radius:4px;background:{color};"></div>
-                    <div>
-                      <div style="color:#8f9bad;font-size:.8rem;">DECISION</div>
-                      <div style="color:{color};font-size:1.5rem;font-weight:800;">{d['decision']}</div>
-                    </div>
-                  </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Failure probability", f"{d['failure_probability']:.3f}")
-            m2.metric("Anomaly score", f"{d['anomaly_score']:.3f}")
-            m3.metric("Maintenance priority", d["maintenance_priority"])
-            m4.metric("Model agreement", d["agreement"].split(":")[0])
-            if d["shap"]:
-                st.markdown("**Top SHAP drivers** (positive = pushes towards failure)")
-                for name, val in d["shap"]:
-                    max_abs = max((abs(v) for _, v in d["shap"]), default=1.0)
-                    bar_w = int(min(abs(val) / max(max_abs, 1e-9) * 100, 100))
-                    st.markdown(
-                        f"""<div style="display:flex;align-items:center;gap:.6rem;margin:.15rem 0;">
-                              <div style="width:180px;color:#b9c2d4;font-size:.85rem;">{name}</div>
-                              <div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;height:10px;">
-                                <div style="width:{bar_w}%;height:10px;border-radius:8px;
-                                background:linear-gradient(90deg,{'#ff5252' if val >= 0 else '#3ddc84'},transparent);"></div>
-                              </div>
-                              <div style="width:80px;color:{'#ff8a8a' if val >= 0 else '#7de8a9'};">{val:+.4f}</div>
-                            </div>""",
-                        unsafe_allow_html=True,
-                    )
+            show_decision(pred.predict(df, explain=explain)[0])
         except Exception as e:
             st.error(f"Invalid input: {e}")
 
 # =============================================== REAL-TIME MANUAL MONITORING
 elif page == "⏱ Real-Time Monitoring (Manual)":
-    hero("Real-Time Monitoring · Manual Entry", "Type each reading as it arrives — scored, logged and drift-checked instantly.")
+    st.title("Real-Time Monitoring — Manual Entry")
+    st.caption("Type each reading as it arrives. It is scored, logged and drift-checked instantly.")
+
     if "rt_log" not in st.session_state:
         st.session_state["rt_log"] = pd.DataFrame(
             columns=["time", "decision", "failure_probability", "anomaly_score",
@@ -261,7 +178,7 @@ elif page == "⏱ Real-Time Monitoring (Manual)":
         names = sensor_columns(prefix="rt_")
         tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"], key="rt_tp")
         add_threshold = st.slider("Failure-risk threshold", 0.5, 0.95, 0.7, 0.05, key="rt_thr")
-        submitted = st.form_submit_button("ADD READING", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Add reading", type="primary", use_container_width=True)
 
     if submitted:
         try:
@@ -283,21 +200,7 @@ elif page == "⏱ Real-Time Monitoring (Manual)":
                 **names, "Type": tp.split(" ")[0],
                 "drift_sigma": round(drift, 2),
             }
-            color = {"HEALTHY": "#3ddc84", "WARNING": "#f5a623", "INSPECT": "#f5a623", "FAILURE_RISK": "#ff5252"}[d["decision"]]
-            st.markdown(
-                f"""<div style="padding:.9rem 1.1rem;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid {color}55;">
-                      <span style="color:#8f9bad;font-size:.8rem;">LATEST READING</span>
-                      <div style="color:{color};font-size:1.4rem;font-weight:800;">{d['decision']} — {d['maintenance_priority']}</div>
-                    </div>""",
-                unsafe_allow_html=True,
-            )
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Failure probability", f"{d['failure_probability']:.3f}")
-            m2.metric("Anomaly score", f"{d['anomaly_score']:.3f}")
-            m3.metric("Agreement", d["agreement"].split(":")[0])
-            m4.metric("Torque drift", f"{drift:.2f}σ")
-            if d["shap"]:
-                st.markdown("**Why:** " + " · ".join(f"`{n}` {v:+.3f}" for n, v in d["shap"][:3]))
+            show_decision(d)
         except Exception as e:
             st.error(f"Rejected: {e}")
 
@@ -315,14 +218,15 @@ elif page == "⏱ Real-Time Monitoring (Manual)":
         with pc2:
             st.plotly_chart(px.line(log, x="time", y="Torque [Nm]", markers=True,
                                     title="Torque over readings (drift watch)"), use_container_width=True)
-        with st.expander("Full manual-entry log", expanded=False):
+        with st.expander("Full manual-entry log"):
             st.dataframe(log.sort_values("time", ascending=False), use_container_width=True)
 
 # ========================================================= BATCH CSV PREDICTION
 elif page == "📄 Batch CSV Prediction":
-    hero("Batch CSV Prediction", "Upload an AI4I-format file — validation and scoring for every machine at once.")
+    st.title("Batch CSV Prediction")
+    st.caption("Upload an AI4I-format file — validation and scoring for every machine at once.")
     up = st.file_uploader("CSV (AI4I 2020 format)", type=["csv"])
-    if up and st.button("RUN BATCH", type="primary"):
+    if up and st.button("Run batch prediction", type="primary"):
         raw = pd.read_csv(io.BytesIO(up.read()))
         try:
             df, issues = validate_dataframe(raw, "batch upload")
@@ -332,12 +236,11 @@ elif page == "📄 Batch CSV Prediction":
             out = raw.loc[df.index].copy() if len(raw) == len(df) else df.copy()
             out = pd.concat([out.reset_index(drop=True), results_table(decisions)], axis=1)
             st.session_state["batch"] = out
-            st.session_state["batch_raw_issues"] = issues
             st.dataframe(out, use_container_width=True)
             buf = io.BytesIO()
             out.to_csv(buf, index=False)
             buf.seek(0)
-            st.download_button("DOWNLOAD RESULTS", buf, file_name="predictions.csv", type="primary")
+            st.download_button("Download results CSV", buf, file_name="predictions.csv", type="primary")
             counts = out["decision"].value_counts()
             st.plotly_chart(px.bar(x=counts.index, y=counts.values, labels={"x": "Decision", "y": "Machines"},
                                    title="Decision distribution"), use_container_width=True)
@@ -348,7 +251,8 @@ elif page == "📄 Batch CSV Prediction":
 
 # ======================================================== MACHINE HEALTH ANALYTICS
 elif page == "📊 Machine Health Analytics":
-    hero("Machine Health Analytics", "Fleet-level insight on the latest batch: risk mix, weak spots, distributions.")
+    st.title("Machine Health Analytics")
+    st.caption("Fleet-level insight on the latest batch: risk mix, weak spots and distributions.")
     if "batch" not in st.session_state:
         st.info("Run a batch prediction first — analytics are computed on those results.")
     else:
@@ -374,7 +278,8 @@ elif page == "📊 Machine Health Analytics":
 
 # ============================================================== EXPLAINABILITY
 elif page == "🔍 Explainability":
-    hero("Explainability · SHAP", "Which signals drive each failure-risk prediction — and by how much.")
+    st.title("Explainability (SHAP)")
+    st.caption("Which signals drive each failure-risk prediction — and by how much.")
     try:
         pipe, _ = load_models()
         model = pipe.named_steps["model"]
@@ -385,14 +290,16 @@ elif page == "🔍 Explainability":
             st.plotly_chart(px.bar(imp, x="importance", y="feature", orientation="h",
                                    title="Model feature importance"), use_container_width=True)
         st.markdown(
-            "**Reading SHAP:** positive values push toward failure, negative toward healthy. Magnitude = effect strength for that machine."
+            "**Reading SHAP:** positive values push the prediction towards failure, negative values towards healthy. "
+            "Magnitude = strength of the effect for that specific machine."
         )
     except Exception as e:
         st.error(f"Model not available: {e}")
 
 # =================================================================== MONITORING
 elif page == "🩺 Monitoring":
-    hero("System Monitoring", "Input drift versus training reference · classifier–detector agreement.")
+    st.title("System Monitoring")
+    st.caption("Input drift versus training reference · classifier–detector agreement.")
     st.subheader("Input drift vs training reference")
     ref = get_reference_stats()
     if ref is None:
