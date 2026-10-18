@@ -514,22 +514,42 @@ Runtime-generated (git-ignored): `models/`, `mlruns/`, `mlflow.db`,
 streamlit run dashboard/app.py
 ```
 
-### Streamlit Community Cloud
+### Streamlit Community Cloud (zero manual config)
 
-1. Push the repository to GitHub (keep `data/` small or generate at build).
-2. Because `models/` is git-ignored, either:
-   - **Option A (recommended for demo):** un-ignore and commit
-     `models/latest/` (a few MB), or
-   - **Option B:** add a build step / run in the Cloud shell once:
-     ```powershell
-     python scripts/generate_data.py
-     python train_cli.py --data data/ai4i_synthetic.csv --model random_forest
-     ```
-3. On share.streamlit.io: point the app at `dashboard/app.py`;
-   requirements file `requirements.txt`.
-4. MLflow is local-file based; on Streamlit Cloud the tracking DB is
-   ephemeral. For persistent experiment tracking, host MLflow separately
-   (e.g. Databricks / a small VM) and change the tracking URI.
+The app is **self-bootstrapping**: on first boot, `ensure_models()` in
+`dashboard/ui_common.py` checks for `models/latest/` artifacts; if they are
+missing (they are git-ignored on the cloud instance) it generates the data
+if needed and trains the Random Forest + Isolation Forest automatically
+(~45 s behind a spinner). No build commands, no committed model files.
+
+**Deploy steps:**
+
+1. Push this repository to GitHub (all source, `data/`, `requirements.txt`,
+   `.streamlit/config.toml` are tracked):
+   ```powershell
+   git remote add origin https://github.com/<you>/<repo>.git
+   git push -u origin main
+   ```
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **Create app** →
+   pick the repo/branch:
+   - **Main file path:** `dashboard/app.py`
+   - **Python version:** 3.11+ (defaults are fine)
+   - **Requirements file:** `requirements.txt` (auto-detected)
+3. Deploy. First boot shows *"Preparing models (first run trains
+   automatically)…"* while training runs; after that, models load in <1 s.
+4. Optional advanced settings → **Secrets** are not required (the app has no
+   secret inputs); MLflow tracking stays local to the instance.
+
+**What to know for the cloud:**
+
+| Concern | Behavior on Streamlit Cloud |
+|---|---|
+| `models/` git-ignored | auto-recreated by `ensure_models()` on first boot |
+| `mlflow.db` / `mlruns/` | ephemeral per instance — experiment history resets on redeploy; host MLflow externally for persistence |
+| `logs/app.log` | written to instance disk, ephemeral |
+| Instance restarts | model bootstrap re-runs (also ~45 s, once per fresh instance) |
+| Warm app loading | lazy model load via `st.cache_resource` — first prediction instant thereafter |
+| Ephemeral disk | git-ignored artifacts (`models/`, logs, MLflow) are never lost from git because they are regenerable |
 
 ### Running from any working directory
 
@@ -545,7 +565,7 @@ correctly regardless of the launch cwd.
 |---|---|
 | `ModuleNotFoundError: predict_industrial_quality_ai` | run `streamlit run dashboard/app.py` from the repo root (pages self-configure the path, but models are resolved relative to root); or set `PYTHONPATH=src` |
 | Values invisible in input fields | do a hard refresh (`Ctrl+F5`) so stale cached CSS from older versions is purged; the current UI uses only Streamlit-native widgets |
-| `Model not available` / models missing | train first: `python scripts/generate_data.py && python train_cli.py --data data/ai4i_synthetic.csv` |
+| `Model not available` / models missing | the dashboard auto-trains on first boot; if you run headless code, train first: `python scripts/generate_data.py && python train_cli.py --data data/ai4i_synthetic.csv` |
 | All rows rejected by validation | check your CSV column names match the AI4I schema exactly (e.g. `Air temperature [K]` with the bracket unit); see the ranges table |
 | SHAP import error (numba) | `pip install numba shap` |
 | MLflow "file store maintenance mode" | the project already uses the SQLite backend; re-run training |

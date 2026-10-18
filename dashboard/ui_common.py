@@ -40,6 +40,35 @@ DECISION_COLORS = {
     "FAILURE_RISK": "red",
 }
 
+# Repo root: dashboard/ui_common.py -> parents[1]
+ROOT = Path(__file__).resolve().parents[1]
+MODELS_LATEST = ROOT / "models" / "latest"
+
+
+# ---------------------------------------------------------------- deployment
+
+def ensure_models() -> bool:
+    """Train models on first boot if artifacts are missing (e.g. Streamlit
+    Community Cloud, where models/ is git-ignored). Returns True if it trained.
+    """
+    if (MODELS_LATEST / "classifier.joblib").exists() and (MODELS_LATEST / "anomaly_detector.joblib").exists():
+        return False
+
+    from predict_industrial_quality_ai.train import train
+
+    data_path = ROOT / "data" / "ai4i_synthetic.csv"
+    if not data_path.exists():
+        import sys
+
+        scripts_dir = str(ROOT / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from generate_data import generate
+
+        generate(path=str(data_path))
+    train(str(data_path), model_type="random_forest")
+    return True
+
 
 # ----------------------------------------------------------------- model cache
 
@@ -54,7 +83,7 @@ def get_reference_stats() -> dict | None:
     try:
         import joblib
 
-        return joblib.load("models/latest/reference_stats.joblib")
+        return joblib.load(MODELS_LATEST / "reference_stats.joblib")
     except Exception:
         return None
 

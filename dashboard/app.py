@@ -3,8 +3,11 @@
 Standard Streamlit multipage architecture (st.navigation + st.Page).
 Run: streamlit run dashboard/app.py
 """
+import os
 import sys
 from pathlib import Path
+
+os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 
 _HERE = Path(__file__).resolve().parent
 _SRC = _HERE.parent / "src"
@@ -20,6 +23,13 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="auto",
 )
+
+# First-boot model bootstrap (Streamlit Community Cloud: models/ is git-ignored)
+with st.spinner("Preparing models (first run trains automatically)..."):
+    from ui_common import ensure_models
+
+    if ensure_models():
+        st.cache_resource.clear()
 
 pages_dir = _HERE / "pages"
 
