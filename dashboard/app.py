@@ -55,10 +55,7 @@ st.markdown(
         border:1px solid rgba(255,255,255,.09) !important;border-radius:16px !important;
       }
       div[data-testid="stForm"]{box-shadow:0 10px 30px rgba(0,0,0,.35);}
-      input{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;
-        border-radius:10px !important;color:#eef2fa !important;font-size:.95rem;}
-      input:focus{border-color:var(--gold) !important;box-shadow:0 0 0 3px rgba(232,182,76,.18) !important;}
-      label,.stMarkdown p{color:#b9c2d4;}
+      label,.stMarkdown p{color:#c9d1e0;}
       button[kind="primary"]{
         background:linear-gradient(135deg,#e8b64c 0%,#c9912f 100%) !important;
         color:#16130a !important;font-weight:800;border:none;border-radius:12px;
