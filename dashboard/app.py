@@ -39,12 +39,12 @@ st.markdown(
 
 # ------------------------------------------------------------------ navigation
 PAGES = {
-    "Predict": "🏠 Single Prediction",
-    "Live": "⏱ Real-Time Monitoring (Manual)",
-    "Batch": "📄 Batch CSV Prediction",
-    "Health": "📊 Machine Health Analytics",
-    "Explain": "🔍 Explainability",
-    "Monitor": "🩺 Monitoring",
+    "Predict": "Single Prediction",
+    "Live": "Real-Time Monitoring (Manual)",
+    "Batch": "Batch CSV Prediction",
+    "Health": "Machine Health Analytics",
+    "Explain": "Explainability",
+    "Monitor": "System Monitoring",
 }
 
 page = st.segmented_control(
@@ -57,7 +57,7 @@ if page is None:
     page = PAGES["Predict"]
 
 with st.sidebar:
-    st.title("⚙ Predict IQ-AI")
+    st.title("Predict IQ-AI")
     st.caption("Random Forest / XGBoost · Isolation Forest · SHAP")
     st.divider()
     st.caption("Use the selector at the top to switch pages — it works best on phones.")
@@ -135,7 +135,7 @@ def results_table(decisions):
 
 
 # ============================================================ SINGLE PREDICTION
-if page == "🏠 Single Prediction":
+if page == "Single Prediction":
     st.title("Single Machine Prediction")
     st.caption("Enter sensor readings — validated, scored by the ML engine and explained with SHAP.")
     names = sensor_columns()
@@ -143,7 +143,7 @@ if page == "🏠 Single Prediction":
     explain = st.checkbox("Include SHAP explanation", True)
     risk = st.slider("Risk threshold (FAILURE_RISK)", 0.5, 0.95, 0.7, 0.05)
 
-    if st.button("Run prediction", type="primary", use_container_width=True):
+    if st.button("Run prediction", type="primary", width="stretch"):
         try:
             rec = validate_single_record({**names, "Type": tp.split(" ")[0]})
             df, issues = validate_dataframe(pd.DataFrame([rec]), "single input")
@@ -156,7 +156,7 @@ if page == "🏠 Single Prediction":
             st.error(f"Invalid input: {e}")
 
 # =============================================== REAL-TIME MANUAL MONITORING
-elif page == "⏱ Real-Time Monitoring (Manual)":
+elif page == "Real-Time Monitoring (Manual)":
     st.title("Real-Time Monitoring — Manual Entry")
     st.caption("Type each reading as it arrives. It is scored, logged and drift-checked instantly.")
 
@@ -170,7 +170,7 @@ elif page == "⏱ Real-Time Monitoring (Manual)":
         names = sensor_columns(prefix="rt_")
         tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"], key="rt_tp")
         add_threshold = st.slider("Failure-risk threshold", 0.5, 0.95, 0.7, 0.05, key="rt_thr")
-        submitted = st.form_submit_button("Add reading", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Add reading", type="primary", width="stretch")
 
     if submitted:
         try:
@@ -206,15 +206,15 @@ elif page == "⏱ Real-Time Monitoring (Manual)":
         pc1, pc2 = st.columns(2)
         with pc1:
             st.plotly_chart(px.line(log, x="time", y="failure_probability", markers=True,
-                                    title="Failure probability over readings"), use_container_width=True)
+                                    title="Failure probability over readings"), width="stretch")
         with pc2:
             st.plotly_chart(px.line(log, x="time", y="Torque [Nm]", markers=True,
-                                    title="Torque over readings (drift watch)"), use_container_width=True)
+                                    title="Torque over readings (drift watch)"), width="stretch")
         with st.expander("Full manual-entry log"):
-            st.dataframe(log.sort_values("time", ascending=False), use_container_width=True)
+            st.dataframe(log.sort_values("time", ascending=False), width="stretch")
 
 # ========================================================= BATCH CSV PREDICTION
-elif page == "📄 Batch CSV Prediction":
+elif page == "Batch CSV Prediction":
     st.title("Batch CSV Prediction")
     st.caption("Upload an AI4I-format file — validation and scoring for every machine at once.")
     up = st.file_uploader("CSV (AI4I 2020 format)", type=["csv"])
@@ -228,21 +228,21 @@ elif page == "📄 Batch CSV Prediction":
             out = raw.loc[df.index].copy() if len(raw) == len(df) else df.copy()
             out = pd.concat([out.reset_index(drop=True), results_table(decisions)], axis=1)
             st.session_state["batch"] = out
-            st.dataframe(out, use_container_width=True)
+            st.dataframe(out, width="stretch")
             buf = io.BytesIO()
             out.to_csv(buf, index=False)
             buf.seek(0)
             st.download_button("Download results CSV", buf, file_name="predictions.csv", type="primary")
             counts = out["decision"].value_counts()
             st.plotly_chart(px.bar(x=counts.index, y=counts.values, labels={"x": "Decision", "y": "Machines"},
-                                   title="Decision distribution"), use_container_width=True)
+                                   title="Decision distribution"), width="stretch")
         except Exception as e:
             st.error(f"Batch failed: {e}")
     elif "batch" in st.session_state:
-        st.dataframe(st.session_state["batch"], use_container_width=True)
+        st.dataframe(st.session_state["batch"], width="stretch")
 
 # ======================================================== MACHINE HEALTH ANALYTICS
-elif page == "📊 Machine Health Analytics":
+elif page == "Machine Health Analytics":
     st.title("Machine Health Analytics")
     st.caption("Fleet-level insight on the latest batch: risk mix, weak spots and distributions.")
     if "batch" not in st.session_state:
@@ -256,20 +256,20 @@ elif page == "📊 Machine Health Analytics":
         c4.metric("Healthy", int((out["decision"] == "HEALTHY").sum()))
         pc1, pc2 = st.columns(2)
         with pc1:
-            st.plotly_chart(px.pie(out, names="decision", title="Decision share", hole=0.45), use_container_width=True)
+            st.plotly_chart(px.pie(out, names="decision", title="Decision share", hole=0.45), width="stretch")
         with pc2:
             if "Type" in out:
                 st.plotly_chart(px.histogram(out, x="Type", color="decision", barmode="stack",
-                                             title="Risk by machine type"), use_container_width=True)
+                                             title="Risk by machine type"), width="stretch")
         st.plotly_chart(px.histogram(out, x="failure_probability", nbins=25, color="decision",
-                                     title="Failure probability distribution"), use_container_width=True)
+                                     title="Failure probability distribution"), width="stretch")
         for col in NUM_COLS:
             if col in out:
                 st.plotly_chart(px.histogram(out, x=col, color="decision", nbins=30,
-                                             title=f"{col} vs decision"), use_container_width=True)
+                                             title=f"{col} vs decision"), width="stretch")
 
 # ============================================================== EXPLAINABILITY
-elif page == "🔍 Explainability":
+elif page == "Explainability":
     st.title("Explainability (SHAP)")
     st.caption("Which signals drive each failure-risk prediction — and by how much.")
     try:
@@ -280,7 +280,7 @@ elif page == "🔍 Explainability":
             imp = pd.DataFrame({"feature": [n.replace("num__", "").replace("cat__", "") for n in names],
                                 "importance": model.feature_importances_}).sort_values("importance")
             st.plotly_chart(px.bar(imp, x="importance", y="feature", orientation="h",
-                                   title="Model feature importance"), use_container_width=True)
+                                   title="Model feature importance"), width="stretch")
         st.markdown(
             "**Reading SHAP:** positive values push the prediction towards failure, negative values towards healthy. "
             "Magnitude = strength of the effect for that specific machine."
@@ -289,7 +289,7 @@ elif page == "🔍 Explainability":
         st.error(f"Model not available: {e}")
 
 # =================================================================== MONITORING
-elif page == "🩺 Monitoring":
+elif page == "Monitoring":
     st.title("System Monitoring")
     st.caption("Input drift versus training reference · classifier–detector agreement.")
     st.subheader("Input drift vs training reference")
@@ -309,9 +309,9 @@ elif page == "🩺 Monitoring":
                 rows.append({"feature": col, "train_mean": r_mean, "current_mean": round(cur_mean, 2),
                              "drift_sigma": round(drift, 2), "status": "DRIFT" if drift > 1.0 else "OK"})
         drift_df = pd.DataFrame(rows)
-        st.dataframe(drift_df, use_container_width=True)
+        st.dataframe(drift_df, width="stretch")
         st.plotly_chart(px.bar(drift_df, x="feature", y="drift_sigma", color="status",
-                               title="Input drift (sigma units vs training set)"), use_container_width=True)
+                               title="Input drift (sigma units vs training set)"), width="stretch")
     st.subheader("Model agreement")
     if "batch" in st.session_state:
         out = st.session_state["batch"]
