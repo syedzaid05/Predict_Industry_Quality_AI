@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+models/
+mlruns/
+mlflow.db*
+*.joblib
+.venv/
+venv/
+logs/
+.streamlit/secrets.toml

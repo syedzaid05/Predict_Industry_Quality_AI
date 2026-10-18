@@ -1,0 +1,5 @@
+[package]
+name = "predict_industrial_quality_ai"
+version = "1.0.0"
+description = "End-to-end predictive maintenance AI (AI4I 2020): validation, feature engineering, RF/XGBoost + Isolation Forest, decision layer, SHAP, Streamlit"
+requires-python = ">=3.10"
