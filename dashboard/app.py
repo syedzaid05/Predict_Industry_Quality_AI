@@ -51,17 +51,64 @@ NUM_COLS = [
     "Tool wear [min]",
 ]
 
-page = st.sidebar.radio("Navigation", [
-    "🏠 Single Prediction",
-    "⏱ Real-Time Monitoring (Manual)",
-    "📄 Batch CSV Prediction",
-    "📊 Machine Health Analytics",
-    "🔍 Explainability",
-    "🩺 Monitoring",
-], label_visibility="collapsed")
+PAGES = {
+    "🏠 Predict": "🏠 Single Prediction",
+    "⏱ Live": "⏱ Real-Time Monitoring (Manual)",
+    "📄 Batch": "📄 Batch CSV Prediction",
+    "📊 Health": "📊 Machine Health Analytics",
+    "🔍 Explain": "🔍 Explainability",
+    "🩺 Monitor": "🩺 Monitoring",
+}
 
-st.sidebar.markdown("---")
-st.sidebar.caption("Predictive Maintenance AI\n\nRandom Forest / XGBoost + Isolation Forest + SHAP")
+st.markdown(
+    """
+    <style>
+      header[data-testid="stHeader"] {background: rgba(15,18,25,0.85);}
+      [data-testid="stAppViewContainer"] {background: linear-gradient(160deg,#0e1117 0%,#171d29 55%,#1d2433 100%);}
+      section[data-testid="stSidebar"] {background:#11151d;}
+      .block-container {padding-top: 1.2rem; max-width: 1200px;}
+      .nav-btn {
+        display:flex; flex-direction:column; align-items:center; gap:2px;
+        padding:.55rem .2rem; border-radius:14px; font-weight:600; font-size:.86rem;
+        border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05);
+        color:#e6e9f0 !important; text-decoration:none !important; transition:.15s;
+      }
+      .nav-btn.active, .nav-btn:hover {background:#4d7cfe; border-color:#4d7cfe; color:#fff !important;}
+      div[data-testid="stMetricValue"] {color:#f0f4ff;}
+      div[data-testid="stMetricLabel"] p {color:#9aa7bd;}
+      div[data-testid="stPlotlyChart"] > div {background:rgba(255,255,255,.03); border-radius:14px;}
+      .stTabs, .stDataFrame {border-radius:12px;}
+      @media (max-width: 640px) {
+        .nav-btn {font-size:.72rem; padding:.5rem .1rem;}
+        h1 {font-size:1.45rem !important;}
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+if "page" not in st.session_state:
+    st.session_state["page"] = PAGES["🏠 Predict"]
+
+# Touch-friendly top navigation (works on phones; no sidebar needed)
+nav_cols = st.columns(len(PAGES), gap="small")
+for (label, target), col in zip(PAGES.items(), nav_cols):
+    is_active = st.session_state["page"] == target
+    if col.button(label, key=f"nav_{label}", use_container_width=True,
+                  type="primary" if is_active else "secondary"):
+        st.session_state["page"] = target
+        st.rerun()
+st.divider()
+
+page = st.session_state["page"]
+
+with st.sidebar:
+    st.markdown("### 🔧 Predict Industrial Quality AI")
+    st.caption("Random Forest / XGBoost · Isolation Forest · SHAP")
+    st.markdown("---")
+    st.caption("On a phone, use the pill buttons at the top of the page to move between sections.")
+    if len(st.session_state.get("rt_log", [])):
+        st.metric("Manual readings logged", len(st.session_state["rt_log"]))
 
 
 def results_table(decisions):
