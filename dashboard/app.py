@@ -21,7 +21,7 @@ import streamlit as st
 
 from predict_industrial_quality_ai.decision import Predictor
 from predict_industrial_quality_ai.train import load_models
-from predict_industrial_quality_ai.validation import validate_dataframe, validate_single_record
+from predict_industrial_quality_ai.validation import RANGES, validate_dataframe, validate_single_record
 
 st.set_page_config(page_title="Predict Industrial Quality AI", page_icon="🔧", layout="wide")
 
@@ -73,12 +73,12 @@ if page == "🏠 Single Prediction":
     st.title("🔧 Single Machine Prediction")
     col1, col2 = st.columns(2)
     with col1:
-        at = st.number_input("Air temperature [K]", 250.0, 400.0, 298.1)
-        pt = st.number_input("Process temperature [K]", 250.0, 420.0, 308.6)
-        rs = st.number_input("Rotational speed [rpm]", 500.0, 3500.0, 1551.0, step=1.0)
+        at = st.number_input("Air temperature (K) — SI: kelvin, 250–400", 250.0, 400.0, 298.1)
+        pt = st.number_input("Process temperature (K) — SI: kelvin, 250–420", 250.0, 420.0, 308.6)
+        rs = st.number_input("Rotational speed (rpm) — SI: rev/min, 500–3500", 500.0, 3500.0, 1551.0, step=1.0)
     with col2:
-        tq = st.number_input("Torque [Nm]", 0.0, 120.0, 42.8)
-        tw = st.number_input("Tool wear [min]", 0, 350, 228, step=1)
+        tq = st.number_input("Torque (Nm) — SI: newton·metre, 0–120", 0.0, 120.0, 42.8)
+        tw = st.number_input("Tool wear (min) — SI: minutes, 0–350", 0, 350, 228, step=1)
         tp = st.selectbox("Machine type (quality)", ["L (Low)", "M (Medium)", "H (High)"])
     explain = st.checkbox("Include SHAP explanation", True)
     risk = st.slider("Risk threshold (FAILURE_RISK)", 0.5, 0.95, 0.7, 0.05)
@@ -122,17 +122,34 @@ elif page == "⏱ Real-Time Monitoring (Manual)":
                      "drift_sigma"]
         )
 
+    def num_label(col: str) -> str:
+        lo, hi = RANGES[col]
+        return f"{col} ({lo:g}–{hi:g})"
+
+    SI_UNITS = {
+        "Air temperature [K]": "K (kelvin)",
+        "Process temperature [K]": "K (kelvin)",
+        "Rotational speed [rpm]": "rpm (rev/min)",
+        "Torque [Nm]": "Nm (newton·metre)",
+        "Tool wear [min]": "min (minutes)",
+    }
+
     with st.form("rt_form", border=True):
         c1, c2, c3 = st.columns(3)
         with c1:
-            at = st.number_input("Air temperature [K]", 250.0, 400.0, 298.1, key="rt_at")
-            pt = st.number_input("Process temperature [K]", 250.0, 420.0, 308.6, key="rt_pt")
+            st.caption(f"🌡 Air temperature — SI unit: {SI_UNITS['Air temperature [K]']}, range {RANGES['Air temperature [K]'][0]:g}–{RANGES['Air temperature [K]'][1]:g}")
+            at = st.number_input("Air temperature (K)", RANGES["Air temperature [K]"][0], RANGES["Air temperature [K]"][1], 298.1, key="rt_at")
+            st.caption(f"🌡 Process temperature — SI unit: {SI_UNITS['Process temperature [K]']}, range {RANGES['Process temperature [K]'][0]:g}–{RANGES['Process temperature [K]'][1]:g}")
+            pt = st.number_input("Process temperature (K)", RANGES["Process temperature [K]"][0], RANGES["Process temperature [K]"][1], 308.6, key="rt_pt")
         with c2:
-            rs = st.number_input("Rotational speed [rpm]", 500.0, 3500.0, 1551.0, step=1.0, key="rt_rs")
-            tq = st.number_input("Torque [Nm]", 0.0, 120.0, 42.8, key="rt_tq")
+            st.caption(f"⚙️ Rotational speed — SI unit: {SI_UNITS['Rotational speed [rpm]']}, range {RANGES['Rotational speed [rpm]'][0]:g}–{RANGES['Rotational speed [rpm]'][1]:g}")
+            rs = st.number_input("Rotational speed (rpm)", RANGES["Rotational speed [rpm]"][0], RANGES["Rotational speed [rpm]"][1], 1551.0, step=1.0, key="rt_rs")
+            st.caption(f"🌀 Torque — SI unit: {SI_UNITS['Torque [Nm]']}, range {RANGES['Torque [Nm]'][0]:g}–{RANGES['Torque [Nm]'][1]:g}")
+            tq = st.number_input("Torque (Nm)", RANGES["Torque [Nm]"][0], RANGES["Torque [Nm]"][1], 42.8, key="rt_tq")
         with c3:
-            tw = st.number_input("Tool wear [min]", 0, 350, 0, step=1, key="rt_tw")
-            tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"], key="rt_tp")
+            st.caption(f"🔧 Tool wear — SI unit: {SI_UNITS['Tool wear [min]']}, range {RANGES['Tool wear [min]'][0]:g}–{RANGES['Tool wear [min]'][1]:g}")
+            tw = st.number_input("Tool wear (min)", RANGES["Tool wear [min]"][0], RANGES["Tool wear [min]"][1], 0, step=1, key="rt_tw")
+            tp = st.selectbox("Machine type", ["L (Low)", "M (Medium)", "H (High)"], help="Quality variant L/M/H", key="rt_tp")
         add_threshold = st.slider("Failure-risk threshold", 0.5, 0.95, 0.7, 0.05, key="rt_thr")
         submitted = st.form_submit_button("➕ Add reading (real-time check)", type="primary")
 
