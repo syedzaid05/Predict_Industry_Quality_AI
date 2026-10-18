@@ -136,17 +136,59 @@ python -m pytest tests -q
 streamlit run dashboard/app.py
 ```
 
-**Model quality on the synthetic dataset** (20 % hold-out, `random_forest`):
+### Model metrics (20 % hold-out, `data/ai4i_synthetic.csv`, 5,000 rows)
 
-| Metric     | Value  |
-|------------|--------|
-| ROC-AUC    | 0.856  |
-| PR-AUC     | 0.808  |
-| Recall     | 0.714  |
-| F1         | 0.830  |
+Both classifiers trained on 4,000 rows (15.4 % positive class), evaluated on
+1,000 hold-out rows (154 failures, 846 healthy), decision threshold 0.5.
+Every metric below is computed and logged by `train.py` and pushed to MLflow
+under the `test_*` keys.
 
-> Real-world numbers vary with the real AI4I 2020 data; the synthetic
-> generator approximates its class balance (~3–15 % failure depending on seed).
+| Metric | Definition | Random Forest | XGBoost |
+|---|---|---|---|
+| **Accuracy** | (TP+TN) / all | **0.955** | 0.948 |
+| **Precision** | TP / (TP+FP) | **0.991** | 0.932 |
+| **Recall (sensitivity)** | TP / (TP+FN) | 0.714 | 0.714 |
+| **Specificity** | TN / (TN+FP) | **0.999** | 0.991 |
+| **F1** | harmonic mean of precision & recall | **0.830** | 0.809 |
+| **ROC-AUC** | ranking quality across thresholds | **0.856** | 0.853 |
+| **PR-AUC** | precision-recall area (imbalanced data) | **0.808** | 0.803 |
+
+**Confusion matrices** (rows = actual, cols = predicted):
+
+| Random Forest | Predicted healthy | Predicted failure |
+|---|---|---|
+| Actual healthy | TN = **845** | FP = 1 |
+| Actual failure | FN = 44 | TP = 110 |
+
+| XGBoost | Predicted healthy | Predicted failure |
+|---|---|---|
+| Actual healthy | TN = 838 | FP = 8 |
+| Actual failure | FN = 44 | TP = 110 |
+
+Reading of these numbers:
+
+- **Random Forest is the default** because it achieves near-perfect precision
+  (0.991): when it raises a failure flag, it is almost certainly real — ideal
+  for maintenance teams that must trust every alarm.
+- Both models catch **110 of 154** real failures (71.4 % recall); the missed
+  cases are largely ambiguous mid-band machines, which the **Isolation
+  Forest anomaly detector** helps catch via the INSPECT state in the decision
+  layer.
+- Class imbalance (15.4 % failures) is handled by RF's
+  `class_weight="balanced"` and XGB's `scale_pos_weight=10`; PR-AUC is
+  therefore the honest headline ranking metric here, not accuracy.
+
+**Anomaly detector (Isolation Forest):**
+
+| Property | Value |
+|---|---|
+| Training rows | 3,382 healthy-only rows (preprocessed latents) |
+| Contamination | 0.05 (5 % expected anomaly rate on healthy training data) |
+| Role | independent second opinion; raises INSPECT when the classifier misses anomalies |
+| Calibration | `decision_function` sign at 0 → `anomaly_flag` |
+
+> Numbers come from the synthetic dataset (`--seed 42`). With the real UCI
+> AI4I 2020 CSV, retrain and compare runs side-by-side in the MLflow UI.
 
 ---
 
@@ -253,7 +295,10 @@ rather than crashing.
 - The two models never share gradients or errors; their outputs meet for the
   first time in the decision layer.
 
-Training reports ROC-AUC, PR-AUC, recall and F1 on the hold-out set.
+Training reports the full metric suite on the hold-out set — accuracy,
+precision, recall, specificity, F1, ROC-AUC, PR-AUC and the confusion-matrix
+counts (TP/FP/TN/FN) — all stored under `test_*` keys in the trainer output,
+in `models/latest/registry.joblib`, and logged to MLflow.
 
 ### Layer 5 — Decision layer & explainability (`src/.../decision.py`)
 

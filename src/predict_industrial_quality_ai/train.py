@@ -16,7 +16,15 @@ import numpy as np
 import pandas as pd
 from mlflow.models import infer_signature
 from sklearn.ensemble import IsolationForest, RandomForestClassifier
-from sklearn.metrics import average_precision_score, f1_score, recall_score, roc_auc_score
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import train_test_split
 
 from .features import FEATURE_COLS, add_engineered_features, build_pipeline
@@ -95,12 +103,21 @@ def train(
     if y_te is not None:
         proba = pipe.predict_proba(X_te)[:, 1]
         pred = (proba >= 0.5).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_te, pred, labels=[0, 1]).ravel()
         metrics.update(
             {
+                "test_accuracy": accuracy_score(y_te, pred),
+                "test_precision": precision_score(y_te, pred, zero_division=0),
+                "test_recall": recall_score(y_te, pred, zero_division=0),
+                "test_specificity": tn / max(tn + fp, 1),
+                "test_f1": f1_score(y_te, pred, zero_division=0),
                 "test_roc_auc": roc_auc_score(y_te, proba),
                 "test_pr_auc": average_precision_score(y_te, proba),
-                "test_recall": recall_score(y_te, pred),
-                "test_f1": f1_score(y_te, pred),
+                "test_tp": int(tp),
+                "test_fp": int(fp),
+                "test_tn": int(tn),
+                "test_fn": int(fn),
+                "test_pos_rate": float(y_te.mean()),
             }
         )
         logger.info("Test metrics: %s", metrics)
@@ -115,7 +132,7 @@ def train(
     mlflow.set_experiment("predict_industrial_quality_ai")
     with mlflow.start_run(run_name=f"{model_type}_{version}"):
         if y_te is not None:
-            mlflow.log_metrics({k: float(v) for k, v in metrics.items() if isinstance(v, float)})
+            mlflow.log_metrics({k: float(v) for k, v in metrics.items() if isinstance(v, (int, float))})
         mlflow.log_param("model_type", model_type)
         mlflow.log_param("train_rows", len(X_tr))
         signature = infer_signature(X_tr.head(50), pipe.predict_proba(X_tr.head(50))[:, 1])
@@ -126,6 +143,8 @@ def train(
             skops_trusted_types=[
                 "predict_industrial_quality_ai.features.FeatureEngineer",
                 "sklearn.tree._tree.Tree",
+                "xgboost.core.Booster",
+                "xgboost.sklearn.XGBClassifier",
             ],
         )
         mlflow.sklearn.log_model(iso, "anomaly_detector", skops_trusted_types=["sklearn.tree._tree.Tree"])
