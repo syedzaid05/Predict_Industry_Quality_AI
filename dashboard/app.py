@@ -47,21 +47,14 @@ PAGES = {
     "Monitor": "🩺 Monitoring",
 }
 
-if "page" not in st.session_state:
-    st.session_state["page"] = PAGES["Predict"]
-
 page = st.segmented_control(
     "Navigate",
     options=list(PAGES.values()),
-    default=st.session_state["page"],
     key="st_page",
     label_visibility="collapsed",
 )
-if page and page != st.session_state["page"]:
-    st.session_state["page"] = page
-    st.rerun()
-elif not page:
-    page = st.session_state["page"]
+if page is None:
+    page = PAGES["Predict"]
 
 with st.sidebar:
     st.title("⚙ Predict IQ-AI")
