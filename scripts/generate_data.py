@@ -44,5 +44,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=5000)
     ap.add_argument("--path", default="data/ai4i_synthetic.csv")
+    ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
-    generate(args.n, path=args.path)
+    generate(args.n, seed=args.seed, path=args.path)
