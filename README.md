@@ -363,16 +363,17 @@ sidebar** (hamburger menu on phones) under two groups:
    charts (failure probability, torque). Inputs pre-fill from your last
    reading so repeated checks are fast.
 
-3. **Batch CSV Prediction** — upload an AI4I-format CSV. All rows are
+3. **Batch CSV Prediction** — upload an AI4I-format CSV or any CSV with the
+   5 sensor readings (flexible headers/Type values). All rows are
    validated (per-issue warnings shown), scored in one pass, and displayed
-   with decision columns; a results summary, decision-distribution bar
+   with decision columns; a results scorecard, decision-distribution bar
    chart, and a **Download results CSV** button are provided. Results are
    cached in the session for the two analytics pages.
 
 ### Intelligence
 
-4. **Machine Health Analytics** — fleet view over the last batch: counts,
-   decision share pie, risk-by-type histogram, failure-probability
+4. **Machine Health Analytics** — fleet view over the last batch: grade
+   counts, decision share pie, risk-by-type histogram, failure-probability
    distribution, and per-feature histograms colored by decision.
 
 5. **Explainability (SHAP)** — global model feature importance (bar chart)
