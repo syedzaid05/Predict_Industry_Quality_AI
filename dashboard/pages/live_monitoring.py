@@ -8,21 +8,47 @@ for p in (str(_HERE.parent / "src"), str(_HERE)):
         sys.path.insert(0, p)
 
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 from ui_common import (
     SENSOR_COLS,
+    GRADE_STYLE,
     get_predictor,
     get_reference_stats,
+    hero,
     machine_type_select,
+    note_card,
+    pipeline_ribbon,
     render_decision,
+    section_header,
     sensor_input_grid,
 )
 from predict_industrial_quality_ai.validation import validate_dataframe, validate_single_record
 
-st.title("Real-Time Manual Monitoring")
-st.caption("Type each sensor reading as it arrives. Every entry is validated, scored, logged, and drift-checked.")
+hero(
+    "Real-Time Manual Monitoring",
+    "Score every sensor reading the moment it arrives: validated → scored → logged → drift-checked.",
+    badge="OPERATIONS · LIVE TRIAGE",
+)
+
+pipeline_ribbon([
+    ("⚙", "1 · INPUT", "Engineer types the latest sensor snapshot"),
+    ("✔", "2 · VALIDATE", "Range + type checks reject bad data early"),
+    ("🧠", "3 · SCORE", "RF classifier + Isolation Forest vote on risk"),
+    ("📋", "4 · DECIDE", "Priority P1–P4 + driver explanation (SHAP)"),
+])
+
+note_card(
+    "<b>How to read this page:</b> enter one machine's live sensor values below. "
+    "The app returns a color-graded verdict — <b style='color:#00e676'>HEALTHY</b> (run normally), "
+    "<b style='color:#ffc400'>WARNING</b> (monitor), <b style='color:#ff9100'>INSPECT</b> (check soon) or "
+    "<b style='color:#ff1744'>FAILURE RISK</b> (act now, P1) — plus a gauge, a traffic-light panel, "
+    "and the top sensor drivers behind the verdict. Every verdict is appended to the live log with a "
+    "drift check against training conditions."
+)
+
+section_header("Sensor snapshot", "Latest readings from the machine (SI units, validated ranges)")
 
 if "rt_log" not in st.session_state:
     st.session_state["rt_log"] = pd.DataFrame(
@@ -33,8 +59,12 @@ if "rt_log" not in st.session_state:
 with st.form("manual_reading_form", border=True):
     values = sensor_input_grid(prefix="rt_")
     machine_type = machine_type_select(prefix="rt_")
-    risk_threshold = st.slider("Failure-risk threshold", 0.5, 0.95, 0.7, 0.05, key="rt_threshold")
-    submitted = st.form_submit_button("Add reading", type="primary")
+    risk_threshold = st.slider(
+        "Failure-risk threshold", 0.5, 0.95, 0.7, 0.05,
+        key="rt_threshold",
+        help="Probability above which a reading is graded FAILURE_RISK.",
+    )
+    submitted = st.form_submit_button("▶  Score this reading", type="primary")
 
 if submitted:
     try:
@@ -59,33 +89,71 @@ if submitted:
             "Type": machine_type,
             "drift_sigma": round(float(drift), 2),
         }
+        section_header("Verdict", "Graded decision for the latest reading")
         render_decision(decision)
     except Exception as exc:
         st.error(f"Rejected: {exc}")
 
 log = st.session_state["rt_log"]
 if len(log) == 0:
-    st.info("No readings yet — add the first one above.")
+    st.info("Add a reading above to start the live log.")
 else:
     st.divider()
-    st.subheader("Live log")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Readings", len(log))
-    c2.metric("High risk", int((log["decision"] == "FAILURE_RISK").sum()))
-    c3.metric("Latest state", log.iloc[-1]["decision"])
 
-    chart1, chart2 = st.columns(2)
-    with chart1:
-        st.plotly_chart(
-            px.line(log, x="time", y="failure_probability", markers=True,
-                    title="Failure probability over readings"),
-            width="stretch",
-        )
-    with chart2:
-        st.plotly_chart(
-            px.line(log, x="time", y="Torque [Nm]", markers=True,
-                    title="Torque over readings (drift watch)"),
-            width="stretch",
-        )
-    with st.expander("Full log"):
+    # -------- trend charts with colored decision markers
+    section_header("Trend watch", "Failure probability & lowest-risk indicator drift over the session")
+    state_color = {k: GRADE_STYLE[k]["hue"] for k in GRADE_STYLE}
+
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(
+        x=log["time"], y=log["failure_probability"], mode="lines+markers",
+        line=dict(color="#d4af37", width=2, shape="spline"),
+        marker=dict(
+            size=11,
+            color=[state_color.get(d, "#888") for d in log["decision"]],
+            line=dict(width=1.5, color="#0b0d12"),
+        ),
+        customdata=log["decision"],
+        hovertemplate="%{x}<br>probability %{y:.3f}<br>verdict %{customdata}<extra></extra>",
+    ))
+    fig1.add_hline(y=0.7, line_dash="dot", line_color="#ff1744",
+                   annotation_text="P1 threshold", annotation_font_color="#ff1744")
+    fig1.add_hline(y=0.4, line_dash="dot", line_color="#ffc400",
+                   annotation_text="grey band", annotation_font_color="#ffc400")
+    fig1.update_layout(
+        title="Failure probability per reading (dot color = verdict)",
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(t=50, b=10), height=320,
+        yaxis=dict(range=[0, 1]),
+    )
+
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(
+        x=log["time"], y=log["drift_sigma"], mode="lines+markers", fill="tozeroy",
+        line=dict(color="#7fd1ff", width=2, shape="spline"),
+        fillcolor="rgba(127,209,255,.12)",
+        hovertemplate="%{x}<br>drift %{y:.2f}σ<extra></extra>",
+    ))
+    fig2.add_hline(y=1.0, line_dash="dot", line_color="#ff9100",
+                   annotation_text="1σ drift line", annotation_font_color="#ff9100")
+    fig2.update_layout(
+        title="Torque drift from training conditions (σ units)",
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(t=50, b=10), height=320,
+    )
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.plotly_chart(fig1, width="stretch")
+    with c2:
+        st.plotly_chart(fig2, width="stretch")
+
+    note_card(
+        "<b>For review:</b> the left chart shows how fast the machine is approaching the red zone; "
+        "dot colors match the verdict grading. The right chart measures how far today's torque "
+        "has moved from the conditions the model was trained on — sustained drift (bars past "
+        "1σ) is the earliest signal that the model needs retraining."
+    )
+
+    with st.expander("Full session log"):
         st.dataframe(log.sort_values("time", ascending=False), width="stretch")

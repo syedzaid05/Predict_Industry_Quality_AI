@@ -1,8 +1,17 @@
 [theme]
 base = "dark"
-primaryColor = "#e8b64c"
-backgroundColor = "#0e1117"
-secondaryBackgroundColor = "#1a1f2b"
-textColor = "#eef2fa"
-borderColor = "#2a3140"
-font = "sans-serif"
+primaryColor = "#c9d1dc"
+backgroundColor = "#060708"
+secondaryBackgroundColor = "#121417"
+textColor = "#ffffff"
+borderColor = "#3a4048"
+linkColor = "#e6ebf2"
+codeBackgroundColor = "#1a1d23"
+font = "'Segoe UI', sans-serif"
+
+[theme.sidebar]
+backgroundColor = "#0c0d10"
+borderColor = "#2c3139"
+
+[browser]
+gatherUsageStats = false

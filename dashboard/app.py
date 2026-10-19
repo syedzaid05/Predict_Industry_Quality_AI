@@ -33,11 +33,14 @@ with st.spinner("Preparing models (first run trains automatically)..."):
 
 pages_dir = _HERE / "pages"
 
+from ui_common import inject_theme
+
+inject_theme()
+
 nav = st.navigation(
     {
         "Operations": [
-            st.Page(str(pages_dir / "single_prediction.py"), title="Single Prediction", icon=":material/home:", default=True),
-            st.Page(str(pages_dir / "live_monitoring.py"), title="Real-Time Manual Monitoring", icon=":material/monitoring:"),
+            st.Page(str(pages_dir / "live_monitoring.py"), title="Real-Time Manual Monitoring", icon=":material/monitoring:", default=True),
             st.Page(str(pages_dir / "batch_csv.py"), title="Batch CSV Prediction", icon=":material/upload_file:"),
         ],
         "Intelligence": [
@@ -50,7 +53,17 @@ nav = st.navigation(
 )
 
 with st.sidebar:
-    st.markdown("**Predict Industrial Quality AI**")
+    st.markdown(
+        """
+        <div style="letter-spacing:3px;font-weight:800;font-size:1.02rem;color:#ffffff;">
+            PREDICT&nbsp;·&nbsp;QUALITY&nbsp;·&nbsp;AI
+        </div>
+        <div style="color:#aeb6c2;font-size:.78rem;margin-top:4px;letter-spacing:.5px;">
+            Predictive Maintenance Suite
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.caption("Random Forest / XGBoost · Isolation Forest · SHAP")
     st.divider()
     st.caption("Use the sidebar pages to navigate. Works on desktop and phone.")
