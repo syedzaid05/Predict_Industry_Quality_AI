@@ -27,7 +27,7 @@ from ui_common import (
 from predict_industrial_quality_ai.validation import validate_dataframe, validate_single_record
 
 hero(
-    "Real-Time Manual Monitoring",
+    "Real-Time Monitoring",
     "Score every sensor reading the moment it arrives: validated → scored → logged → drift-checked.",
     badge="OPERATIONS · LIVE TRIAGE",
 )
