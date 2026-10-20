@@ -19,10 +19,11 @@ and drift monitoring.
 >   period of inactivity and wake on visit — the cold start also rebuilds the
 >   model artifacts **and trains them automatically on first boot** if needed
 >   (models are git-ignored). This wait is expected platform behavior, visible
->   as a progress message, not an error. Subsequent pages are fast.
+>   as a progress message, not an error. Subsequent uses are fast.
 > - If the app ever shows it is waking up or falls asleep between two reviewers,
 >   simply refresh the page.
-> - Works on **desktop and phone** (sidebar navigation auto-collapses on mobile).
+> - Works on **desktop and phone** — the whole app is one page with a tab
+>   bar, so mobile users get the same single-page workspace as desktop.
 > - If something looks broken, it's worth a (CVE'd) hard refresh (Ctrl+F5 /
 >   clear browser cache) — the UI ships custom CSS that older cached sessions
 >   may hold.
@@ -65,7 +66,7 @@ and drift monitoring.
   handling, and P1–P4 maintenance priorities.
 - **SHAP explainability** (TreeExplainer) for every prediction.
 - **Streamlit dashboard** — single-page tabbed workspace (`st.tabs`)
-  architecture, dark theme, phone-friendly sidebar navigation.
+  architecture, dark theme, optimized for both desktop and phone.
 - **Engineering fundamentals** — pytest suite (14 tests), MLflow experiment
   tracking (SQLite backend), timestamped model versioning, file + stdout
   logging.
