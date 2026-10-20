@@ -10,7 +10,6 @@ for p in (str(_HERE.parent / "src"), str(_HERE)):
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-import streamlit.components.v1 as components
 
 from ui_common import (
     SENSOR_COLS,
@@ -19,6 +18,7 @@ from ui_common import (
     hero,
     note_card,
     section_header,
+    _block as html_block,
 )
 from predict_industrial_quality_ai.validation import RANGES
 
@@ -128,7 +128,8 @@ else:
 
     hue = GRADE_STYLE["FAILURE_RISK"]["hue"] if rate > 0.25 else (
         GRADE_STYLE["WARNING"]["hue"] if rate > 0.1 else GRADE_STYLE["HEALTHY"]["hue"])
-    components.html(f'''<body style="margin:0;background:#08090b;font-family:'Segoe UI',sans-serif;">        <div style="background:linear-gradient(120deg,#14171f,#10131a);
+    html_block(f'''
+        <div style="background:linear-gradient(120deg,#14171f,#10131a);
                     border:1px solid rgba(255,255,255,.12);border-radius:16px;
                     padding:20px 26px;margin:8px 0 14px;text-align:center;
                     box-shadow:0 10px 30px rgba(0,0,0,.45);">
@@ -145,9 +146,7 @@ else:
           <div style="color:#7a8499;font-size:.68rem;margin-top:6px;">
             green zone &lt; 10% &nbsp;·&nbsp; watch &lt; 25% &nbsp;·&nbsp; red zone ≥ 25%
           </div>
-        </div>
-        </body>''',
-        height=240,)
+        </div>''')
     if rate > 0.25:
         st.error("High disagreement — the two models conflict on many machines. Inspect flagged ones manually and retrain on fresh labels.")
     elif rate > 0.1:

@@ -54,14 +54,10 @@ nav = st.navigation(
 
 with st.sidebar:
     st.markdown(
-        """
-        <div style="letter-spacing:3px;font-weight:800;font-size:1.02rem;color:#ffffff;">
-            PREDICT&nbsp;·&nbsp;QUALITY&nbsp;·&nbsp;AI
-        </div>
-        <div style="color:#aeb6c2;font-size:.78rem;margin-top:4px;letter-spacing:.5px;">
-            Predictive Maintenance Suite
-        </div>
-        """,
+        "<div style=\"letter-spacing:3px;font-weight:800;font-size:1.02rem;color:#ffffff;\">"
+        "PREDICT&nbsp;&middot;&nbsp;QUALITY&nbsp;&middot;&nbsp;AI</div>"
+        "<div style=\"color:#aeb6c2;font-size:.78rem;margin-top:4px;letter-spacing:.5px;\">"
+        "Predictive Maintenance Suite</div>",
         unsafe_allow_html=True,
     )
     st.caption("Random Forest / XGBoost · Isolation Forest · SHAP")

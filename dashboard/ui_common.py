@@ -16,7 +16,6 @@ if str(_SRC) not in sys.path:
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 from predict_industrial_quality_ai.decision import Predictor
 from predict_industrial_quality_ai.train import load_models
@@ -80,7 +79,16 @@ h1, h2, h3 {
     text-shadow: 0 1px 3px rgba(0,0,0,.8);
 }
 p, span, td, li { color: #eef1f5; }
-#MainMenu, footer, header { visibility: hidden; }
+footer { visibility: hidden; }
+/* Keep the Streamlit header visible (transparent): it hosts the sidebar
+   expand/collapse control and the exit-fullscreen button. Hiding it
+   leaves the user stuck after opening sidebar or chart fullscreen. */
+header[data-testid="stHeader"] {
+    background: rgba(6,7,8,.6) !important;
+}
+[data-testid="stSidebarCollapsedControl"] {
+    color: #e8ecf1 !important;
+}
 
 /* ---------- metrics: black panel, readable white numbers ---------- */
 div[data-testid="stMetric"] {
@@ -188,75 +196,45 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 }
 .stCaption, [data-testid="stCaptionContainer"] { color: #b7c0cc !important; }
 
-/* ---------- section headers ---------- */
-.sec-header { display: flex; align-items: center; gap: 12px; margin: 26px 0 6px; }
-.sec-bar {
-    width: 5px; align-self: stretch; border-radius: 3px;
-    background: linear-gradient(180deg,#c9d1dc,#4a5058);
-    box-shadow: 0 0 8px rgba(255,255,255,.25);
-}
-.sec-title {
-    font-family: 'Segoe UI', sans-serif;
-    font-size: 1.25rem; font-weight: 800;
-    color: #ffffff; letter-spacing: .4px;
-    text-shadow: 0 1px 3px rgba(0,0,0,.8);
-}
-.sec-sub { color: #c3cad6 !important; font-size: .87rem; margin-bottom: 4px; font-weight: 500; }
-
-/* ---------- hero: black-to-graphite blend ---------- */
-.hero {
-    background: linear-gradient(120deg,#1c1f26 0%,#0b0c0f 60%);
-    border: 1px solid #3a4048;
-    border-radius: 18px;
-    padding: 20px 28px; margin-bottom: 18px;
-    box-shadow: 0 14px 40px rgba(0,0,0,.65);
-    position: relative; overflow: hidden;
-}
-.hero::after {
-    content: ""; position: absolute; top:0; left:0; right:0; height:3px;
-    background: linear-gradient(90deg,#aab4c2,rgba(170,180,194,0) 70%);
-}
-.hero-badge {
-    display:inline-block; font-size:.68rem; font-weight:800;
-    letter-spacing:2.5px; color:#e6ebf2; border:1px solid #5a626e;
-    border-radius:999px; padding:3px 12px; margin-bottom:8px;
-    background:#191c22;
-}
-.hero-title {
-    font-size:1.75rem; font-weight:800; color:#ffffff; letter-spacing:.5px;
-    text-shadow: 0 2px 6px rgba(0,0,0,.9);
-}
-.hero-caption { color:#cfd6e0 !important; font-size:.9rem; margin-top:5px; font-weight: 500; }
-
-/* ---------- pipeline ribbon: silver nodes ---------- */
-.pipe { display:flex; gap:0; margin:6px 0 10px; }
-.pipe-step { flex:1; text-align:center; position:relative; padding:0 4px; }
-.pipe-dot {
-    width:42px; height:42px; border-radius:50%; margin:0 auto 8px;
-    display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(160deg,#23262e,#101216);
-    border:2px solid #8a94a6; color:#ffffff;
-    font-size:1.05rem; font-weight:800;
-    box-shadow:0 0 12px rgba(255,255,255,.18), 0 6px 14px rgba(0,0,0,.6);
-}
-.pipe-step:not(:first-child)::before {
+/* ---------- raw-HTML block helpers (hero, badges, rows) ---------- */
+.row-wrap { display:flex; gap:8px; }
+.tiles { display:flex; gap:12px; }
+.pipeline { display:flex; margin:6px 0 10px; }
+.pipeline > div { position:relative; text-align:center; padding:0 4px; }
+.pipeline > div:not(:first-child)::before {
     content:""; position:absolute; top:20px; left:-50%; width:100%;
     height:2px; background:linear-gradient(90deg, rgba(138,148,166,0), rgba(138,148,166,.6));
     z-index:-1;
 }
-.pipe-label { color:#ffffff !important; font-size:.74rem; font-weight:800; letter-spacing:1.2px; }
-.pipe-desc { color:#b7c0cc !important; font-size:.68rem; margin-top:3px; line-height:1.4; font-weight: 500; }
-
-/* ---------- info callout: graphite ---------- */
-.note {
-    border-left:4px solid #6b7484;
-    border-radius:0 12px 12px 0;
-    background:linear-gradient(90deg,#16181d,#0e1014);
-    padding:14px 18px; margin:10px 0;
-    color:#dfe4ec !important; font-size:.88rem; line-height:1.6;
-    box-shadow: 0 6px 18px rgba(0,0,0,.4);
+.tag {
+    display:inline-block; font-size:.68rem; font-weight:800;
+    letter-spacing:2.5px; color:#e6ebf2; border:1px solid #5a626e;
+    border-radius:999px; padding:3px 12px; margin-bottom:8px; background:#191c22;
 }
-.note b { color:#ffffff; font-weight:700; }
+.hero-inner {
+    background:linear-gradient(120deg,#1c1f26 0%,#0b0c0f 60%);
+    border:1px solid #3a4048; border-radius:18px;
+    border-top:3px solid #aab4c2;
+    padding:16px 26px; box-shadow:0 14px 40px rgba(0,0,0,.65);
+}
+.hero-title {
+    font-size:1.75rem; font-weight:800; color:#ffffff; letter-spacing:.5px;
+    text-shadow:0 2px 6px rgba(0,0,0,.9);
+}
+
+/* ---------- mobile responsiveness ---------- */
+@media (max-width: 700px) {
+    div[data-testid="stMetric"] { padding: 10px 12px; }
+    .hero-inner { padding: 14px 16px !important; }
+    .hero-title { font-size: 1.25rem !important; }
+    .row-wrap { flex-wrap: wrap; }
+    .row-wrap > *, .tiles > * { flex: 1 1 140px !important; }
+    .pipeline { flex-wrap: wrap; row-gap: 14px; }
+    .pipeline > * { flex: 1 1 45% !important; }
+    .tiles { flex-wrap: wrap; row-gap: 10px; }
+    .tiles > * { flex: 1 1 46% !important; }
+    .stDataFrame { width: 100% !important; overflow-x: auto; }
+}
 </style>
 """
 
@@ -268,31 +246,39 @@ def inject_theme() -> None:
 
 # ------------------------------------------------------------ UI components
 
-_BODY = "margin:0;background:#08090b;font-family:'Segoe UI',sans-serif;"
+def _normalize_html(html: str) -> str:
+    """Make the string parse as a raw-HTML block in markdown.
+
+    Markdown parses a 4+ space indented line as an indented CODE block
+    before the HTML rule fires, so leading indentation and blank lines
+    inside HTML must be removed.
+    """
+    lines = [line.strip() for line in html.splitlines()]
+    return "\n".join(line for line in lines if line)
 
 
-def _block(html: str, height: int) -> None:
-    """Render HTML in an isolated component — immune to markdown parsing."""
-    components.html(
-        f"<body style=\"{_BODY}\">{html}</body>",
-        height=height, scrolling=False,
-    )
+def _block(html: str) -> None:
+    """Render an HTML block via markdown so it reflows on phone screens
+    (components.html iframes clip fixed-height content on mobile)."""
+    st.markdown(_normalize_html(html), unsafe_allow_html=True)
+
+
+# Public alias for pages that render raw HTML directly.
+html_block = _block
 
 
 def hero(title: str, caption: str, badge: str = "PREDICTIVE MAINTENANCE AI") -> None:
     _block(f"""
-    <div style="background:linear-gradient(120deg,#1c1f26 0%,#0b0c0f 60%);
+    <div class="hero-inner" style="background:linear-gradient(120deg,#1c1f26 0%,#0b0c0f 60%);
                 border:1px solid #3a4048;border-radius:18px;
                 border-top:3px solid #aab4c2;
                 padding:16px 26px;box-shadow:0 14px 40px rgba(0,0,0,.65);">
-        <div style="display:inline-block;font-size:.68rem;font-weight:800;
-                    letter-spacing:2.5px;color:#e6ebf2;border:1px solid #5a626e;
-                    border-radius:999px;padding:3px 12px;margin-bottom:8px;background:#191c22;">{badge}</div>
-        <div style="font-size:1.75rem;font-weight:800;color:#ffffff;letter-spacing:.5px;
+        <div class="tag">{badge}</div>
+        <div class="hero-title" style="font-size:1.75rem;font-weight:800;color:#ffffff;letter-spacing:.5px;
                     text-shadow:0 2px 6px rgba(0,0,0,.9);">{title}</div>
         <div style="color:#cfd6e0;font-size:.9rem;margin-top:5px;font-weight:500;">{caption}</div>
     </div>
-    """, 160)
+    """)
 
 
 def section_header(title: str, subtitle: str | None = None) -> None:
@@ -306,7 +292,7 @@ def section_header(title: str, subtitle: str | None = None) -> None:
             {f'<div style="color:#c3cad6;font-size:.87rem;margin-top:2px;font-weight:500;">{subtitle}</div>' if subtitle else ''}
         </div>
     </div>
-    """, 96)
+    """)
 
 
 def pipeline_ribbon(steps: list[tuple[str, str, str]]) -> None:
@@ -323,17 +309,16 @@ def pipeline_ribbon(steps: list[tuple[str, str, str]]) -> None:
             <div style="color:#ffffff;font-size:.74rem;font-weight:800;letter-spacing:1.2px;">{label}</div>
             <div style="color:#b7c0cc;font-size:.68rem;margin-top:3px;line-height:1.4;font-weight:500;">{desc}</div>
         </div>"""
-    _block(f'<div style="display:flex;margin:6px 0 10px;">{cells}</div>', 150)
+    _block(f'<div class="pipeline">{cells}</div>')
 
 
 def note_card(text: str) -> None:
-    est_lines = max(2, (len(text) // 150) + text.count("<br>") + 2)
     _block(f"""
     <div style="border-left:4px solid #6b7484;border-radius:0 12px 12px 0;
                 background:linear-gradient(90deg,#16181d,#0e1014);
                 padding:14px 18px;color:#dfe4ec;font-size:.88rem;line-height:1.6;
                 box-shadow:0 6px 18px rgba(0,0,0,.4);">{text}</div>
-    """, 52 + 16 * est_lines)
+    """)
 
 # Repo root: dashboard/ui_common.py -> parents[1]
 ROOT = Path(__file__).resolve().parents[1]
@@ -480,7 +465,7 @@ def render_decision(decision: dict) -> None:
                 box-shadow:0 10px 32px {gx['dark']}55, 0 0 24px {hue}40;
                 border:1px solid {hue}">
       <div style="display:flex;align-items:center;gap:14px;">
-        <div style="width:16px;height:16px;border-radius:50%;background:{hue};
+        <div style="width:16px;height:16px;flex:0 0 16px;border-radius:50%;background:{hue};
                     box-shadow:0 0 16px 4px {hue};"></div>
         <div>
           <div style="color:#0b0d12;font-weight:800;font-size:1.5rem;
@@ -492,16 +477,13 @@ def render_decision(decision: dict) -> None:
     </div>
     """
 
-    # gauge + LEDs + banner in ONE isolated component (markdown-proof)
-    _block(
-        _risk_gauge(decision["failure_probability"], hue, "FAILURE PROBABILITY")
-        + '<div style="display:flex;gap:8px;margin:0 0 14px;">'
+    # gauge + LEDs + banner — markdown HTML, reflows on mobile
+    _block(_risk_gauge(decision["failure_probability"], hue, "FAILURE PROBABILITY")
+        + '<div class="row-wrap" style="margin:0 0 14px;">'
         + _led_lamp(active == 0, GRADE_STYLE["HEALTHY"]["hue"], "HEALTHY")
         + _led_lamp(active == 1, GRADE_STYLE["WARNING"]["hue"], "WARNING")
         + _led_lamp(active == 2, GRADE_STYLE["FAILURE_RISK"]["hue"], "FAILURE RISK")
-        + "</div>" + banner,
-        480,
-    )
+        + "</div>" + banner)
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Failure probability", f"{decision['failure_probability']:.3f}", border=True)
     c2.metric("Anomaly score", f"{decision['anomaly_score']:.3f}", border=True)
@@ -530,7 +512,7 @@ def render_scorecard(out: pd.DataFrame) -> None:
     """Standalone, always-visible fleet scorecard: 4 grade tiles + distribution bar."""
     counts = out["decision"].value_counts()
     total = max(len(out), 1)
-    tiles = '<div style="display:flex;gap:12px;">'
+    tiles = '<div class="tiles" style="display:flex;gap:12px;">'
     for key in ("FAILURE_RISK", "WARNING", "INSPECT", "HEALTHY"):
         g = GRADE_STYLE[key]
         n = int(counts.get(key, 0))
@@ -554,14 +536,12 @@ def render_scorecard(out: pd.DataFrame) -> None:
         if n:
             bar += f'<div style="width:{n / total * 100:.1f}%;background:{GRADE_STYLE[key]["hue"]};"></div>'
     bar += "</div>"
-    _block(
-        tiles
+    _block(tiles
         + '<div style="margin:14px 0 4px;font-size:.66rem;color:#aeb6c2;'
         'letter-spacing:1.5px;font-weight:700;">FLEET GRADE MIX &nbsp;—&nbsp; '
         f'{total} machines</div>'
-        + bar,
-        235,
-    )
+        + bar
+        + '<div style="height:4px"></div>')
 
 
 def render_batch_results(out: pd.DataFrame) -> None:
