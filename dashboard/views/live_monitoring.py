@@ -59,11 +59,19 @@ if "rt_log" not in st.session_state:
 with st.form("manual_reading_form", border=True):
     values = sensor_input_grid(prefix="rt_")
     machine_type = machine_type_select(prefix="rt_")
-    risk_threshold = st.slider(
-        "Failure-risk threshold", 0.5, 0.95, 0.7, 0.05,
-        key="rt_threshold",
-        help="Probability above which a reading is graded FAILURE_RISK.",
-    )
+    c1, c2 = st.columns(2)
+    with c1:
+        risk_threshold = st.slider(
+            "Failure-risk threshold", 0.5, 0.95, 0.7, 0.05,
+            key="rt_threshold",
+            help="Probability above which a reading is graded FAILURE_RISK.",
+        )
+    with c2:
+        explain = st.checkbox(
+            "Include SHAP explanation", value=True, key="rt_explain",
+            help="Adds the top per-sensor drivers to the verdict card. "
+                 "Turn off on slow connections for a snappier response.",
+        )
     submitted = st.form_submit_button("▶  Score this reading", type="primary")
 
 if submitted:
@@ -72,7 +80,7 @@ if submitted:
         df, _ = validate_dataframe(pd.DataFrame([record]), "manual reading")
         predictor = get_predictor()
         predictor.risk_threshold = risk_threshold
-        decision = predictor.predict(df, explain=True)[0]
+        decision = predictor.predict(df, explain=explain)[0]
 
         ref = get_reference_stats()
         torque = values["Torque [Nm]"]

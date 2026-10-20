@@ -64,7 +64,7 @@ and drift monitoring.
 - **Decision layer** with a risk threshold, a grey band, model-disagreement
   handling, and P1–P4 maintenance priorities.
 - **SHAP explainability** (TreeExplainer) for every prediction.
-- **Streamlit dashboard** — 6 pages, standard `st.navigation` multipage
+- **Streamlit dashboard** — single-page tabbed workspace (`st.tabs`)
   architecture, dark theme, phone-friendly sidebar navigation.
 - **Engineering fundamentals** — pytest suite (14 tests), MLflow experiment
   tracking (SQLite backend), timestamped model versioning, file + stdout
@@ -107,7 +107,7 @@ and drift monitoring.
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Layer 6 — Streamlit dashboard  (dashboard/)                             │
-│   Single Prediction · Real-Time Manual Monitoring · Batch CSV ·         │
+│   Real-Time Monitoring · Batch CSV ·         │
 │   Health Analytics · Explainability · System Monitoring                 │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 ▼
@@ -363,24 +363,21 @@ and [Deployment](#13-deployment).
 
 ## 7. Dashboard user guide
 
-Launch with `streamlit run dashboard/app.py`. Pages appear in the **left
-sidebar** (hamburger menu on phones) under two groups:
+Launch with `streamlit run dashboard/app.py`. The dashboard is one
+single-page workspace: sections switch with a **tab bar** at the top
+(into the page, no sidebar navigation needed — mobile friendly):
 
 ### Operations
 
-1. **Single Prediction** — enter the 5 sensors (each label shows the SI unit
-   and allowed range) and the machine type, set the risk threshold, and click
-   *Run prediction*. You get the decision, probability, anomaly score,
-   agreement, detector flag, and an expandable SHAP table.
+1. **Real-Time Monitoring** — enter the 5 sensors (each label shows the SI
+   unit and allowed range) and the machine type, set the risk threshold and
+   the SHAP toggle, then click *Score this reading*. Every submitted reading
+   is validated, predicted, and appended to a session log with a timestamp
+   and torque-drift σ vs the training reference. Below the form: reading
+   counts, latest state, and two trend charts (failure probability, torque).
+   Inputs pre-fill from your last reading so repeated checks are fast.
 
-2. **Real-Time Manual Monitoring** — the same form inside a `st.form`; every
-   submitted reading is validated, predicted (with SHAP), and appended to a
-   session log with a timestamp and torque-drift σ vs the training
-   reference. Below the form: reading counts, latest state, and two trend
-   charts (failure probability, torque). Inputs pre-fill from your last
-   reading so repeated checks are fast.
-
-3. **Batch CSV Prediction** — upload an AI4I-format CSV or any CSV with the
+2. **Batch CSV Prediction** — upload an AI4I-format CSV or any CSV with the
    5 sensor readings (flexible headers/Type values). All rows are
    validated (per-issue warnings shown), scored in one pass, and displayed
    with decision columns; a results scorecard, decision-distribution bar
@@ -389,14 +386,15 @@ sidebar** (hamburger menu on phones) under two groups:
 
 ### Intelligence
 
-4. **Machine Health Analytics** — fleet view over the last batch: grade
+3. **Machine Health Analytics** — fleet view over the last batch: grade
    counts, decision share pie, risk-by-type histogram, failure-probability
    distribution, and per-feature histograms colored by decision.
 
-5. **Explainability (SHAP)** — global model feature importance (bar chart)
-   and a guide to reading SHAP values. Per-machine SHAP appears on pages 1–2.
+4. **Explainability (SHAP)** — global model feature importance (bar chart)
+   and a guide to reading SHAP values. Per-machine SHAP appears on the
+   Real-Time Monitoring tab after each reading.
 
-6. **System Monitoring** — per-feature input drift (σ units) of the last
+5. **System Monitoring** — per-feature input drift (σ units) of the last
    batch vs the training reference (stored at train time in
    `models/latest/reference_stats.joblib`), with a DRIFT/OK status chart,
    plus the classifier ↔ detector disagreement rate.
@@ -475,10 +473,9 @@ Predict_Industrail_Quality_AI/
 ├── .streamlit/
 │   └── config.toml                  # dark theme tokens (base, colors)
 ├── dashboard/
-│   ├── app.py                       # entry: st.navigation multipage
+│   ├── app.py                       # entry: single-page st.tabs workspace
 │   ├── ui_common.py                 # cached models, sensor grid, decision card
-│   └── pages/
-│       ├── single_prediction.py
+│   └── views/
 │       ├── live_monitoring.py
 │       ├── batch_csv.py
 │       ├── health_analytics.py
@@ -581,7 +578,7 @@ correctly regardless of the launch cwd.
 
 | Symptom | Fix |
 |---|---|
-| `ModuleNotFoundError: predict_industrial_quality_ai` | run `streamlit run dashboard/app.py` from the repo root (pages self-configure the path, but models are resolved relative to root); or set `PYTHONPATH=src` |
+| `ModuleNotFoundError: predict_industrial_quality_ai` | run `streamlit run dashboard/app.py` from the repo root (views self-configure the path, but models are resolved relative to root); or set `PYTHONPATH=src` |
 | Values invisible in input fields | do a hard refresh (`Ctrl+F5`) so stale cached CSS from older versions is purged; the current UI uses only Streamlit-native widgets |
 | `Model not available` / models missing | the dashboard auto-trains on first boot; if you run headless code, train first: `python scripts/generate_data.py && python train_cli.py --data data/ai4i_synthetic.csv` |
 | All rows rejected by validation | check your CSV column names match the AI4I schema exactly (e.g. `Air temperature [K]` with the bracket unit); see the ranges table |

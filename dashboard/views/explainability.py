@@ -60,6 +60,6 @@ try:
                           coloraxis_colorbar=dict(tickfont=dict(color="#c3cad6")),
                           title_font_color="#ffffff")
         st.plotly_chart(fig, width="stretch")
-    st.caption("Per-machine SHAP drivers are shown on the prediction pages (Single Prediction and Real-Time Manual Monitoring).")
+    st.caption("Per-machine SHAP drivers are shown on the Real-Time Monitoring tab after each reading.")
 except Exception as exc:
     st.error(f"Model not available: {exc}")
