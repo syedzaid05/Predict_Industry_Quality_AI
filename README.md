@@ -287,6 +287,18 @@ its unit and allowed range, and `validation.RANGES` rejects out-of-range
 values at the API layer — you cannot bypass them by typing, uploading, or
 calling the code directly.
 
+### ⚠️ Why the committed sample data is synthetic
+
+The `data/ai4i_synthetic.csv` shipped in this repository is **synthetically
+generated, not the real dataset**. The CSV available for download from
+Kaggle did **not match** the UCI AI4I 2020 schema this project is built on
+(different column names/format), so `scripts/generate_data.py` fabricates a
+schema-compatible stand-in with the same correlated failure physics. All
+metrics in this README and the deployed demo are therefore computed from
+synthetic data. To reproduce results on real data, download the official
+CSV from UCI (below) and retrain — the pipeline is schema-identical and
+requires no code changes.
+
 ### Getting the real dataset
 
 1. Download `ai4i2020.csv` from the UCI link above.
