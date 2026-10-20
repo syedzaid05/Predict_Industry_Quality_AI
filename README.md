@@ -15,11 +15,18 @@ and drift monitoring.
 > This app is already deployed and running on **Streamlit Community Cloud** —
 > just open the link the candidate shared; no install, no setup, nothing to run.
 >
-> - **First load can take ~60–90 seconds.** Free Cloud apps "sleep" after a
->   period of inactivity and wake on visit — the cold start also rebuilds the
->   model artifacts **and trains them automatically on first boot** if needed
->   (models are git-ignored). This wait is expected platform behavior, visible
->   as a progress message, not an error. Subsequent uses are fast.
+> > **⚡ Important for reviewers:** on the **free Streamlit Community Cloud
+> > tier, apps automatically go to sleep after ~12 hours (h) of inactivity**
+> > and must cold-start again on the next visit. This is a platform limit of
+> > the free tier, not a bug in the app. If the link was visited recently the
+> > app is instant; if it slept, the first load takes ~60–90 s.
+>
+> - **First load can take ~60–90 seconds.** Free Cloud apps sleep after
+>   inactivity (~12 h on the free tier) and wake on visit — the cold start also
+>   rebuilds the model artifacts **and trains them automatically on first
+>   boot** if needed (models are git-ignored). This wait is expected platform
+>   behavior, visible as a progress message, not an error. Subsequent uses are
+>   fast.
 > - If the app ever shows it is waking up or falls asleep between two reviewers,
 >   simply refresh the page.
 > - Works on **desktop and phone** — the whole app is one page with a tab
@@ -33,20 +40,21 @@ and drift monitoring.
 ## Table of contents
 
 1. [Key features](#1-key-features)
-2. [System architecture](#2-system-architecture)
-3. [Installation](#3-installation)
-4. [Quickstart](#4-quickstart)
-5. [The data](#5-the-data)
-6. [Layer-by-layer deep dive](#6-layer-by-layer-deep-dive)
-7. [Dashboard user guide](#7-dashboard-user-guide)
-8. [Training, MLflow and model versioning](#8-training-mlflow-and-model-versioning)
-9. [Logging](#9-logging)
-10. [Testing](#10-testing)
-11. [Project structure](#11-project-structure)
-12. [Configuration reference](#12-configuration-reference)
-13. [Deployment](#13-deployment)
-14. [Troubleshooting FAQ](#14-troubleshooting-faq)
-15. [Roadmap](#15-roadmap)
+2. [Interview cheat-sheet](#2-interview-cheat-sheet-30-second-answers)
+3. [System architecture](#3-system-architecture)
+4. [Installation](#4-installation)
+5. [Quickstart](#5-quickstart)
+6. [The data](#6-the-data)
+7. [Layer-by-layer deep dive](#7-layer-by-layer-deep-dive)
+8. [Dashboard user guide](#8-dashboard-user-guide)
+9. [Training, MLflow and model versioning](#9-training-mlflow-and-model-versioning)
+10. [Logging](#10-logging)
+11. [Testing](#11-testing)
+12. [Project structure](#12-project-structure)
+13. [Configuration reference](#13-configuration-reference)
+14. [Deployment](#14-deployment)
+15. [Troubleshooting FAQ](#15-troubleshooting-faq)
+16. [Roadmap](#16-roadmap)
 
 ---
 
@@ -73,7 +81,49 @@ and drift monitoring.
 
 ---
 
-## 2. System architecture
+## 2. Interview cheat-sheet (30-second answers)
+
+If you are preparing to present this project, the sections below are the
+canned answers. Full details live in [§7](#7-layer-by-layer-deep-dive).
+
+- **"Walk me through the architecture."** → Use the diagram in
+  [§3 System architecture](#3-system-architecture). Key sentence: *seven
+  layers, data sources → validation → feature engineering → two independent
+  ML models → decision fusion + SHAP → Streamlit UI, with pytest / MLflow /
+  logging underneath.*
+- **"Why two models?" (the headline design decision)** → The **Random Forest
+  classifier** learns from historical failure *labels*; the **Isolation
+  Forest** knows nothing about labels and flags *statistically unusual*
+  readings. Two independent opinions: they can confirm each other (trust ↑)
+  or disagree (→ INSPECT, human review). They never share state — fusion
+  happens **only** in the decision layer (`decision.py`).
+- **"How do you avoid train/serve skew?"** → All preprocessing (domain
+  features, scaling, one-hot encoding) lives **inside** the fitted sklearn
+  `Pipeline` object that is persisted; inference applies the identical
+  fitted transform — nothing is recomputed at serve time.
+- **"How do you know the model is still valid in production?"** → System
+  Monitoring page: per-sensor **input drift in σ units** vs training
+  reference statistics (`reference_stats.joblib`, saved at train time), plus
+  the classifier↔detector **disagreement rate** as a model-health alarm.
+- **"Class imbalance?"** → 15.4 % failure rate: RF `class_weight="balanced"`,
+  XGB `scale_pos_weight=10`; the honest ranking metric is **PR-AUC**
+  (0.808 RF), not accuracy. Details + confusion matrices in §5.
+- **"How would you explain a prediction to a technician?"** → **SHAP
+  (TreeExplainer)**: top features pushing each specific machine toward
+  failure, shown per reading on the dashboard.
+- **"Testing & MLOps?"** → 14 pytest unit tests (validation moves through
+  features, pipeline, decision); the dashboard is smoke-tested with
+  Streamlit's `AppTest`; every training run logs params+metrics+models to
+  **MLflow** (SQLite backend) and writes versioned artifacts plus a
+  `models/latest/` registry the dashboard loads.
+- **"Deployment story?"** → Single-repo, zero-config deploy on **Streamlit
+  Community Cloud**: git-ignored models are auto-trained by `ensure_models()`
+  on first boot; free-tier apps sleep after ~12 h inactivity and wake on
+  visit (cold start ~60–90 s, automatic retrain only on a fresh instance).
+
+---
+
+## 3. System architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -121,7 +171,7 @@ and drift monitoring.
 
 ---
 
-## 3. Installation
+## 4. Installation
 
 Requires **Python 3.10+** (developed and tested on 3.13).
 
@@ -137,7 +187,7 @@ Packages installed: `pandas`, `numpy`, `scikit-learn`, `xgboost`, `shap`,
 
 ---
 
-## 4. Quickstart
+## 5. Quickstart
 
 ```powershell
 # 1) Data — either use the real AI4I 2020 CSV, or generate a synthetic stand-in
@@ -210,7 +260,7 @@ Reading of these numbers:
 
 ---
 
-## 5. The data
+## 6. The data
 
 ### AI4I 2020 format
 
@@ -258,7 +308,7 @@ python scripts/generate_data.py --n 20000 --path data/big.csv
 
 ---
 
-## 6. Layer-by-layer deep dive
+## 7. Layer-by-layer deep dive
 
 ### Layer 2 — Data validation (`src/.../validation.py`)
 
@@ -353,16 +403,16 @@ FAILURE_RISK boundary; the grey band bounds are constants in `decision.py`.
 
 ### Layers 1 & 6 — Dashboard (`dashboard/`)
 
-See the [Dashboard user guide](#7-dashboard-user-guide) below.
+See the [Dashboard user guide](#8-dashboard-user-guide) below.
 
 ### Layer 7 — Engineering
 
-See [Testing](#10-testing), [MLflow](#8-training-mlflow-and-model-versioning)
-and [Deployment](#13-deployment).
+See [Testing](#11-testing), [MLflow](#9-training-mlflow-and-model-versioning)
+and [Deployment](#14-deployment).
 
 ---
 
-## 7. Dashboard user guide
+## 8. Dashboard user guide
 
 Launch with `streamlit run dashboard/app.py`. The dashboard is one
 single-page workspace: sections switch with a **tab bar** at the top
@@ -402,7 +452,7 @@ single-page workspace: sections switch with a **tab bar** at the top
 
 ---
 
-## 8. Training, MLflow and model versioning
+## 9. Training, MLflow and model versioning
 
 `train_cli.py` wraps `train()` from `src/.../train.py`:
 
@@ -435,7 +485,7 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 ---
 
-## 9. Logging
+## 10. Logging
 
 `src/.../logging_config.py` provides `get_logger(name)` used by every module.
 Logs are written to **both** `logs/app.log` and stdout with the format:
@@ -449,7 +499,7 @@ metrics, and per-call prediction summaries.
 
 ---
 
-## 10. Testing
+## 11. Testing
 
 ```powershell
 python -m pytest tests -q
@@ -467,7 +517,7 @@ The dashboard is additionally verified headlessly with Streamlit's official
 
 ---
 
-## 11. Project structure
+## 12. Project structure
 
 ```
 Predict_Industrail_Quality_AI/
@@ -508,7 +558,7 @@ Runtime-generated (git-ignored): `models/`, `mlruns/`, `mlflow.db`,
 
 ---
 
-## 12. Configuration reference
+## 13. Configuration reference
 
 | What | Where | How to change |
 |---|---|---|
@@ -522,7 +572,7 @@ Runtime-generated (git-ignored): `models/`, `mlruns/`, `mlflow.db`,
 
 ---
 
-## 13. Deployment
+## 14. Deployment
 
 ### Local
 
@@ -560,6 +610,7 @@ if needed and trains the Random Forest + Isolation Forest automatically
 
 | Concern | Behavior on Streamlit Cloud |
 |---|---|
+| **App sleeps after inactivity** | **Free-tier Community Cloud apps sleep after ~12 h of inactivity.** The next visit triggers a cold start (~60–90 s) during which `ensure_models()` may re-train on a fresh instance. This is platform behavior, not a bug — refreshing the page after the wake screen is enough |
 | `models/` git-ignored | auto-recreated by `ensure_models()` on first boot |
 | `mlflow.db` / `mlruns/` | ephemeral per instance — experiment history resets on redeploy; host MLflow externally for persistence |
 | `logs/app.log` | written to instance disk, ephemeral |
@@ -575,7 +626,7 @@ correctly regardless of the launch cwd.
 
 ---
 
-## 14. Troubleshooting FAQ
+## 15. Troubleshooting FAQ
 
 | Symptom | Fix |
 |---|---|
@@ -589,7 +640,7 @@ correctly regardless of the launch cwd.
 
 ---
 
-## 15. Roadmap
+## 16. Roadmap
 
 - [ ] Retraining CLI flag for the real UCI dataset with drift-aware thresholds
 - [ ] Model registry promotion (MLflow Model Registry stages: Staging → Production)

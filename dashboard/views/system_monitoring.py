@@ -121,10 +121,13 @@ section_header(
 
 if "batch" not in st.session_state:
     st.info("Run a batch prediction first to see model agreement.")
+elif not isinstance(st.session_state["batch"], pd.DataFrame) or st.session_state["batch"].empty \
+        or "agreement" not in st.session_state["batch"].columns:
+    st.warning("Stored batch is missing the agreement column — rerun the batch prediction.")
 else:
     out = st.session_state["batch"]
-    disagreement = out["agreement"].str.startswith("disagree").mean()
-    rate = float(disagreement)
+    disagreement = out["agreement"].astype(str).str.startswith("disagree", na=False).mean()
+    rate = float(disagreement) if pd.notna(disagreement) else 0.0
 
     hue = GRADE_STYLE["FAILURE_RISK"]["hue"] if rate > 0.25 else (
         GRADE_STYLE["WARNING"]["hue"] if rate > 0.1 else GRADE_STYLE["HEALTHY"]["hue"])
